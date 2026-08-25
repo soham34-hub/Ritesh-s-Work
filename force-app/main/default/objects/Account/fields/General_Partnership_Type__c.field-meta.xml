@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>General_Partnership_Type__c</fullName>
+    <label>General Partnership Type</label>
+    <type>Picklist</type>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <valueSet>
+        <restricted>false</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>--None--</fullName><default>true</default></value>
+            <value><fullName>General Partnership</fullName><default>false</default></value>
+            <value><fullName>Limited Partnership</fullName><default>false</default></value>
+            <value><fullName>LLP</fullName><default>false</default></value>
+            <value><fullName>LLC</fullName><default>false</default></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

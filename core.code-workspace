@@ -1,0 +1,19 @@
+{
+  "folders": [
+    {
+      "path": "/Users/sohamghosh/Documents/GitHub/Project-AWG-Integration"
+    }
+  ],
+  "settings": {
+    "eslint.workingDirectories": [
+      "/Users/sohamghosh/Documents/GitHub/Project-AWG-Integration"
+    ],
+    "eslint.validate": [
+      "javascript",
+      "typescript"
+    ],
+    "eslint.options": {
+      "overrideConfigFile": "/Users/sohamghosh/Documents/GitHub/Project-AWG-Integration/.eslintrc.json"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Last_Modified_Date_Exposure__c</fullName>
+    <label>Last Modified Date (Exposure)</label>
+    <type>DateTime</type>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+</CustomField>

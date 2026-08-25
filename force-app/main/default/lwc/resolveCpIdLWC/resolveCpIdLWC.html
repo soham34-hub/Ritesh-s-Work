@@ -1,0 +1,287 @@
+<template>
+    <div class="slds-modal__content slds-p-around_medium">
+        <!-- ── VIEW 1: Search ──────────────────────────────────────────── -->
+        <template if:false={showCreateForm}>
+
+            <!-- Search Fields -->
+            <div class="search-row">
+                <template if:true={showSsnField}>
+                    <div class="search-field">
+                        <lightning-input label="SSN" value={ssn} type="text"
+                            placeholder="e.g. 123-45-6789"
+                            onchange={handleSsnChange} onkeydown={handleKeyDown}>
+                        </lightning-input>
+                    </div>
+                </template>
+                <template if:true={showTinField}>
+                    <div class="search-field">
+                        <lightning-input label="TIN" value={tin} type="text"
+                            placeholder="e.g. 12-3456789"
+                            onchange={handleTinChange} onkeydown={handleKeyDown}>
+                        </lightning-input>
+                    </div>
+                </template>
+                <div class="search-field">
+                    <lightning-input label="First Name" value={firstName} type="text"
+                        onchange={handleFirstNameChange} onkeydown={handleKeyDown}>
+                    </lightning-input>
+                </div>
+                <div class="search-field">
+                    <lightning-input label="Last Name" value={lastName} type="text"
+                        onchange={handleLastNameChange} onkeydown={handleKeyDown}>
+                    </lightning-input>
+                </div>
+                <div class="search-field">
+                    <lightning-input label="Legal Address" value={street} type="text"
+                        placeholder="Street"
+                        onchange={handleStreetChange} onkeydown={handleKeyDown}>
+                    </lightning-input>
+                </div>
+            </div>
+
+            <div class="search-actions">
+                <lightning-button label="Search" icon-name="utility:search"
+                    onclick={handleSearch} disabled={isSearching}>
+                </lightning-button>
+                <lightning-button label="Create New Account" variant="brand"
+                    icon-name="utility:add"
+                    disabled={isCreateDisabled}
+                    onclick={handleShowCreateForm}>
+                </lightning-button>
+            </div>
+
+            <!-- Spinner -->
+            <template if:true={isSearching}>
+                <div class="spinner-wrap">
+                    <lightning-spinner size="medium" variant="brand" alternative-text="Searching..."></lightning-spinner>
+                    <p class="spinner-msg">Searching CIS...</p>
+                </div>
+            </template>
+
+            <!-- Results Table -->
+            <template if:true={hasResults}>
+                <div class="results-section">
+                    <div class="results-header">
+                        <span class="results-count">
+                            <span class="count-badge">{searchResults.length}</span>
+                            record(s) found
+                        </span>
+                        <span class="results-hint">Select a record and click Link Account</span>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-select">Select</th>
+                                    <th>Full Name</th>
+                                    <template if:true={showSsnField}><th>SSN</th></template>
+                                    <template if:true={showTinField}><th>TIN</th></template>
+                                    <th>Address</th>
+                                    <th>CPID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={searchResults} for:item="result">
+                                    <tr key={result.cisId}
+                                        class={result.rowClass}
+                                        onclick={handleRowSelect}
+                                        data-id={result.cisId}>
+                                        <td class="col-select">
+                                            <input type="radio" name="cisResult"
+                                                data-id={result.cisId}
+                                                checked={result.isSelected}>
+                                        </td>
+                                        <td class="col-name">{result.name}</td>
+                                        <template if:true={showSsnField}><td class="col-ssn">{result.ssn}</td></template>
+                                        <template if:true={showTinField}><td class="col-tin">{result.tin}</td></template>
+                                        <td>{result.address}</td>
+                                        <td class="col-cpid">{result.cisId}</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </template>
+
+            <!-- No Results -->
+            <template if:true={noResults}>
+                <div class="state-empty">
+                    <lightning-icon icon-name="utility:search" size="medium" alternative-text="No results"></lightning-icon>
+                    <p class="empty-title">No records found in CIS</p>
+                    <p class="empty-msg">Click <strong>Create New Account</strong> to create a new account with a CIS profile.</p>
+                </div>
+            </template>
+
+            <!-- Error -->
+            <template if:true={hasError}>
+                <div class="state-error">
+                    <p class="error-msg">{errorMessage}</p>
+                </div>
+            </template>
+
+            <!-- Warning: Different Account -->
+            <template if:true={showDiffAccountWarning}>
+                <div class="warning-box">
+                    <lightning-icon icon-name="utility:warning" variant="warning" size="small" alternative-text="Warning"></lightning-icon>
+                    <div class="warning-content">
+                        <p class="warning-title">Different Account Selected</p>
+                        <p class="warning-msg">The account you selected (<strong>{selectedResult.name}</strong>) is not the account currently open. Are you sure you want to resolve CPID for this account?</p>
+                        <div class="warning-actions">
+                            <lightning-button label="No, Cancel" onclick={handleWarningCancel}></lightning-button>
+                            <lightning-button label="Yes, Resolve CPID" variant="brand" onclick={handleWarningConfirm}></lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Warning: Account Not in Salesforce -->
+            <template if:true={showNotFoundWarning}>
+                <div class="warning-box warning-box-red">
+                    <lightning-icon icon-name="utility:error" variant="error" size="small" alternative-text="Not Found"></lightning-icon>
+                    <div class="warning-content">
+                        <p class="warning-title">Account Not Found in Salesforce</p>
+                        <p class="warning-msg">No Salesforce account found matching <strong>{selectedResult.name}</strong>. You can still resolve this CPID to the currently opened account.</p>
+                        <div class="warning-actions">
+                            <lightning-button label="No, Cancel" onclick={handleWarningCancel}></lightning-button>
+                            <lightning-button label="Yes, Resolve CPID to Current Account" variant="brand" onclick={handleCreateAccountFromCis}></lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+        </template>
+
+        <!-- ── VIEW 2: Create New Account Form ────────────────────────── -->
+        <template if:true={showCreateForm}>
+
+            <div class="create-form-header">
+                <lightning-button-icon
+                    icon-name="utility:back"
+                    variant="bare"
+                    alternative-text="Back to Search"
+                    onclick={handleBackToSearch}>
+                </lightning-button-icon>
+                <span class="create-form-title">Create New Account</span>
+            </div>
+
+            <div class="create-form-body">
+                <p class="create-form-info">
+                    A CIS profile will be created first, then the Salesforce Account will be saved with the returned CPID.
+                </p>
+
+                <div class="field-grid-1col" style="margin-bottom:12px;">
+                    <lightning-combobox
+                        label="Record Type"
+                        value={newRecordTypeId}
+                        options={recordTypeOptions}
+                        required
+                        onchange={handleNewRecordTypeChange}>
+                    </lightning-combobox>
+                </div>
+
+                <div class="field-grid-2col">
+                    <lightning-input label="First Name" value={newFirstName} type="text"
+                        required onchange={handleNewFirstNameChange}>
+                    </lightning-input>
+                    <lightning-input label="Last Name" value={newLastName} type="text"
+                        required onchange={handleNewLastNameChange}>
+                    </lightning-input>
+                </div>
+
+                <div class="field-grid-2col" style="margin-top:12px;">
+                    <template if:true={newShowSsnField}>
+                        <lightning-input label="SSN" value={newSsn} type="text"
+                            placeholder="e.g. 123-45-6789"
+                            onchange={handleNewSsnChange}>
+                        </lightning-input>
+                    </template>
+                    <template if:true={newShowTinField}>
+                        <lightning-input label="TIN" value={newTin} type="text"
+                            placeholder="e.g. 12-3456789"
+                            onchange={handleNewTinChange}>
+                        </lightning-input>
+                    </template>
+                </div>
+
+                <div style="margin-top:12px;">
+                    <p class="section-label">Address</p>
+                    <div class="field-grid-2col">
+                        <lightning-input label="Street" value={newStreet} type="text"
+                            onchange={handleNewStreetChange}>
+                        </lightning-input>
+                        <lightning-input label="City" value={newCity} type="text"
+                            onchange={handleNewCityChange}>
+                        </lightning-input>
+                    </div>
+                    <div class="field-grid-3col" style="margin-top:10px;">
+                        <lightning-input label="State" value={newState} type="text"
+                            onchange={handleNewStateChange}>
+                        </lightning-input>
+                        <lightning-input label="Zip" value={newZip} type="text"
+                            onchange={handleNewZipChange}>
+                        </lightning-input>
+                        <lightning-input label="Country" value={newCountry} type="text"
+                            onchange={handleNewCountryChange}>
+                        </lightning-input>
+                    </div>
+                </div>
+
+                <!-- Spinner -->
+                <template if:true={isCreating}>
+                    <div class="spinner-wrap">
+                        <lightning-spinner size="medium" variant="brand" alternative-text="Creating..."></lightning-spinner>
+                        <p class="spinner-msg">{createStatusMsg}</p>
+                    </div>
+                </template>
+
+                <!-- CIS Profile Created — Link to Current Account -->
+                <template if:true={showCisCreatedMsg}>
+                    <div class="warning-box" style="background:#f0fdf4;border-color:#16a34a;border-left-color:#16a34a;margin-top:16px;">
+                        <lightning-icon icon-name="utility:success" variant="success" size="small" alternative-text="Success"></lightning-icon>
+                        <div class="warning-content">
+                            <p class="warning-title" style="color:#15803d;">CIS Profile Created</p>
+                            <p class="warning-msg" style="color:#166534;">
+                                A new CIS profile has been created with CPID: <strong>{_cisCreatedId}</strong>.
+                                You can now link this CPID to the currently opened account.
+                            </p>
+                            <div class="warning-actions">
+                                <lightning-button label="Dismiss" onclick={handleDismissCisCreated}></lightning-button>
+                                <lightning-button label="Link CPID to Current Account" variant="brand" onclick={handleLinkCisToCurrentAccount}></lightning-button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Create Error -->
+                <template if:true={hasCreateError}>
+                    <div class="state-error" style="margin-top:12px;">
+                        <p class="error-msg">{createErrorMessage}</p>
+                    </div>
+                </template>
+            </div>
+
+        </template>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="slds-modal__footer">
+        <template if:false={showCreateForm}>
+            <lightning-button label="Cancel" onclick={handleCancel}></lightning-button>
+            <lightning-button label="Link Account" variant="brand"
+                disabled={isLinkDisabled}
+                onclick={handleLinkAccount}>
+            </lightning-button>
+        </template>
+        <template if:true={showCreateForm}>
+            <template if:false={showCisCreatedMsg}>
+                <lightning-button label="Back to Search" onclick={handleBackToSearch}></lightning-button>
+                <lightning-button label="Create Account" variant="brand"
+                    disabled={isCreating}
+                    onclick={handleSubmitNewAccount}>
+                </lightning-button>
+            </template>
+        </template>
+    </div>
+</template>
