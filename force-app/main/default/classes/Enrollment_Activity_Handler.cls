@@ -10,14 +10,30 @@ public class Enrollment_Activity_Handler {
 		    if (caseIds.isEmpty()) return;
 	    Map<Id, Case> caseMap = new Map<Id, Case>(
             [SELECT Id,CaseNumber,Product_Code__c,Cat_Level_5__c, Promotion_Account_Product_Code__c, Promotion_CIF__c, Promotion_Account_Status__c,
-             Promotion_Account_Opening_Date__c,Account_Number__c FROM Case WHERE Id IN :caseIds]); 
+             Promotion_Account_Opening_Date__c,Account_Number__c,Account_Status_Override__c FROM Case WHERE Id IN :caseIds]); 
 		User runningUser = [SELECT Truist__Truist_User_ID__c FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
+		Boolean hasOverridePermission = null;
+		Map<Id, Case> casesToUpdate = new Map<Id, Case>();
         for (Enrollment_Activity__c ea : newRecs) {
             Case c = caseMap.get(ea.Case_Number__c);
       	      if (c == null) continue;
     	ea.Req_Opening_Date__c       = c.Promotion_Account_Opening_Date__c;
 		ea.Req_Account_Cycle_Type__c = 'CALENDAR';
-		ea.Req_Account_Status__c     = c.Promotion_Account_Status__c;
+		if (c.Account_Status_Override__c == true) {
+			if (hasOverridePermission == null) {
+				hasOverridePermission = PromoEnrollmentActionController.runingUserProfileAndPermissionSets().accountStatusOverrideButton;
+			}
+			if (hasOverridePermission) {
+				ea.Req_Account_Status__c = 'ACTIVE';
+				c.Promotion_Account_Status__c = 'ACTIVE';
+			} else {
+				ea.Req_Account_Status__c = c.Promotion_Account_Status__c;
+			}
+			c.Account_Status_Override__c = false;
+			casesToUpdate.put(c.Id, c);
+		} else {
+			ea.Req_Account_Status__c = c.Promotion_Account_Status__c;
+		}
         ea.Req_Primary_CIF__c = dropLeadingZeros(c.Promotion_CIF__c);
         ea.Req_Source__c =    c.CaseNumber; // may need to be updated to ID?> 
         ea.Req_Account__c =  dropLeadingZeros(c.Account_Number__c);    
@@ -26,6 +42,9 @@ public class Enrollment_Activity_Handler {
 		}
 		}
       }
+		if (!casesToUpdate.isEmpty()) {
+			update casesToUpdate.values();
+		}
     
     public static String dropLeadingZeros (String inStr) {
     while ( !String.isBlank(inStr) && inStr.startsWith('0') ) inStr = inStr.removeStart('0');

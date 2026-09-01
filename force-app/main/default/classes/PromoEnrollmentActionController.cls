@@ -401,6 +401,7 @@ system.debug('Params: ' +
         perms.forcePayButton       = true;
         perms.rewardReversalButton = true;
         perms.fieldAccess          = true;
+        perms.accountStatusOverrideButton = true;
 
         System.debug('System Administrator detected — full access granted');
         return perms;
@@ -430,6 +431,7 @@ system.debug('Params: ' +
     perms.forcePayButton       = false;
     perms.rewardReversalButton = false;
     perms.fieldAccess          = false;
+    perms.accountStatusOverrideButton = false;
 
     // ---- Apply Chart Logic ----
     if (permissionSetNames.contains(APPROVER)) {
@@ -441,6 +443,7 @@ system.debug('Params: ' +
         perms.forcePayButton       = true;
         perms.rewardReversalButton = true;
         perms.fieldAccess          = true;
+        perms.accountStatusOverrideButton = true;
 
     } else if (permissionSetNames.contains(REVIEWER)) {
 
@@ -525,6 +528,7 @@ public static  zafinReturn sendPromoActionFromLwc(Id enrollmentActivityId) {
         @AuraEnabled    public boolean  forceEnrollButton;
         @AuraEnabled    public boolean  rewardReversalButton; 
         @AuraEnabled    public boolean fieldAccess; 
+        @AuraEnabled    public boolean accountStatusOverrideButton;
     }
     public class zafinReturn{
      @AuraEnabled public  ZafinOfferService.ZafinResponseDTO zafinPackage;
