@@ -1,0 +1,268 @@
+<template>
+   <!-- ===================== -->
+   <!-- LOADING -->
+   <!-- ===================== -->
+   <template if:false={renderUi}>
+      <div class="slds-align_absolute-center slds-p-vertical_medium">
+         <lightning-spinner size="medium" alternative-text="Loading">
+         </lightning-spinner>
+      </div>
+   </template>
+   <!-- ===================== -->
+   <!-- MAIN UI -->
+   <!-- ===================== -->
+   <template if:true={renderUi}>
+      <!-- ============================= -->
+      <!-- RELATED ENROLLMENT ACTIVITIES -->
+      <!-- ============================= -->
+      <lightning-card title="Related Enrollment Activities" icon-name="standard:related_list">
+         <div slot="actions">
+            <lightning-button label="Refresh" icon-name="utility:refresh" onclick={handleRefreshActivities}>
+            </lightning-button>
+         </div>
+         <div class="slds-p-around_small">
+            <template if:true={hasActivities}>
+               <lightning-datatable key-field="Id" data={enrollmentActivities} columns={enrollmentActivityColumns}
+                  onrowaction={handleActivityRowAction}>
+               </lightning-datatable>
+            </template>
+            <template if:false={hasActivities}>
+               <div class="slds-box slds-align_absolute-center">
+                  No Activity Found
+               </div>
+            </template>
+         </div>
+      </lightning-card>
+      <!-- ============================= -->
+      <!-- PROMO ENROLLMENT ACTIONS -->
+      <!-- ============================= -->
+      <lightning-card title="Promo Enrollment Actions" icon-name="utility:apps">
+         <!-- FORCE ACTION BUTTONS -->
+         <div class="slds-p-around_medium">
+            <lightning-button label="Force Enroll" variant={enrollVariant} onclick={handleForceEnroll}
+               disabled={disableEnrollButton}>
+            </lightning-button>
+            <lightning-button label="Force Pay" variant={payVariant} onclick={handleForcePay}
+               disabled={disablePayButton}>
+            </lightning-button>
+            <lightning-button label="Reward Reversal" variant={reverseVariant} onclick={handleRewardReversal}
+               disabled={disableReverseButton}>
+            </lightning-button>
+         </div>
+         <!-- ============================= -->
+         <!-- FORM -->
+         <!-- ============================= -->
+         <template if:true={showForm}>
+            <div class="slds-p-around_medium">
+               <!-- ===================== -->
+               <!-- READ-ONLY HEADER -->
+               <!-- ===================== -->
+               <div class="slds-grid slds-gutters slds-m-bottom_large">
+                  <div class="slds-col slds-size_1-of-2">
+                     <div class="slds-form slds-form_stacked">
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Record</label>
+                           <lightning-formatted-text value={enrommentRecordName}></lightning-formatted-text>
+                        </div>
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Case Number</label>
+                           <lightning-formatted-text value={caseNumber}></lightning-formatted-text>
+                        </div>
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Account #</label>
+                           <lightning-formatted-text value={accountNumber}></lightning-formatted-text>
+                        </div>
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Servicing Challenges Category</label>
+                           <lightning-formatted-text value={servicesChallengingCategory}></lightning-formatted-text>
+                        </div>
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Initiative Tracking</label>
+                           <lightning-formatted-text value={initiativeTracking}></lightning-formatted-text>
+                        </div>
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Relief Provided?</label>
+                           <lightning-formatted-text value={reliefProvided}></lightning-formatted-text>
+                        </div>
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Relief Type</label>
+                           <lightning-formatted-text value={reliefType}></lightning-formatted-text>
+                        </div>
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Remediation/Relief Amount</label>
+                           <lightning-formatted-number value={remediation}></lightning-formatted-number>
+                        </div> 
+                     </div>
+                  </div>
+                  <div class="slds-col slds-size_1-of-2">
+                     <div class="slds-form slds-form_stacked">
+                        <!-- <div class="slds-form-element slds-m-bottom_medium"> -->
+                           <!-- <label class="slds-form-element__label">Reviewer/Approver:</label>
+                           <lightning-formatted-text value={ownerDisplay}></lightning-formatted-text> -->
+                        <!-- </div> -->
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Transaction Status</label>
+                           <lightning-formatted-text value={zafinStatusDisplay}></lightning-formatted-text>
+                        </div>
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Transaction Time Stamp</label>
+                           <lightning-formatted-text value={zafinTs}></lightning-formatted-text>
+                        </div>
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Zafin Code</label>
+                           <lightning-formatted-text value={zafinError}></lightning-formatted-text>
+                        </div>
+                        <div class="slds-form-element slds-m-bottom_medium">
+                           <label class="slds-form-element__label">Zafin Message</label>
+                           <lightning-formatted-text value={zafinMessage}></lightning-formatted-text>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <!-- ===================== -->
+               <!-- RECORD EDIT FORM -->
+               <!-- ===================== -->
+               <lightning-record-edit-form object-api-name="Enrollment_Activity__c" record-id={editingRecordId}
+                  onload={handleLoad} onsubmit={handleSubmit} onsuccess={handleSuccess} onerror={handleError}>
+                  <div class="slds-grid slds-gutters">
+                     <!-- ===================== -->
+                     <!-- LEFT COLUMN -->
+                     <!-- ===================== -->
+                     <div class="slds-col slds-size_1-of-2">
+                        <!-- ✅ PROMO CODE (MANUAL FIELD) -->
+                        <template if:true={showPromoCode}>
+                           <div class="slds-form-element slds-m-bottom_medium">
+                              <label class="slds-form-element__label">
+                                 <abbr class="slds-required" title="required">*</abbr>
+                                 Promo Code
+                              </label>
+                              <div class="slds-form-element__control">
+                                 <lightning-input label="Promo Code" variant="label-hidden" value={promoCodeValue}
+                                    onchange={handlePromoCodeChange} disabled={isKeyFieldsDisabled}>
+                                    required
+                                 </lightning-input>
+                              </div>
+                           </div>
+                        </template>
+
+                        <!-- ✅ DYNAMIC LEFT FIELDS -->
+                        <template for:each={leftDynamicFields} for:item="f">
+                           <div key={f.api} class="slds-form-element slds-m-bottom_medium">
+                              <label class="slds-form-element__label">{f.label}</label>
+                              <lightning-input-field field-name={f.api} disabled={f.disabled} data-field={f.api}
+                                 variant="label-hidden">
+                              </lightning-input-field>
+                           </div>
+                        </template>
+                        <template if:true={enrollReversalOnly}>
+                           <div class="slds-form-element slds-m-bottom_medium">
+                              <label class="slds-form-element__label">
+
+                                 Comments
+                              </label>
+                              <div class="slds-form-element__control">
+                                 <lightning-input-field field-name="Req_Comments__c" label="Comments"
+                                    variant="label-hidden" onchange={handleCommentChange} disabled={isKeyFieldsDisabled}
+                                    data-field="Req_Comments__c">
+                                 </lightning-input-field>
+                              </div>
+                           </div>
+                        </template>
+                     </div>
+                     <!-- ===================== -->
+                     <!-- RIGHT COLUMN -->
+                     <!-- ===================== -->
+                     <div class="slds-col slds-size_1-of-2">
+                        <template for:each={rightDynamicFieldsForRender} for:item="f">
+                           <div key={f.api} class="slds-form-element slds-m-bottom_medium">
+                              <template if:true={payReversalOnly}>
+                                 <div class="slds-form-element">
+                                    <label class="slds-form-element__label">
+                                       <abbr class="slds-required" title="required">*</abbr>
+                                       Offer Code
+                                    </label>
+                                    <div class="slds-form-element__control">
+                                       <lightning-combobox class="offercodecheck" label="Offer Code"
+                                          variant="label-hidden" value={selectedOfferCode} options={offerOptions}
+                                          onchange={handleOfferChange} disabled={isKeyFieldsDisabled} required>
+                                       </lightning-combobox>
+                                    </div>
+                                 </div>
+                              </template>
+                              <div class="slds-form-element slds-m-bottom_medium">
+                                 <label class="slds-form-element__label"></label>
+                                 <lightning-input-field field-name="Req_Reason_Code__c" value={selectedReasonCode}
+                                    onchange={handleReasonCodeChange} disabled={isKeyFieldsDisabled}>
+                                 </lightning-input-field>
+                              </div>
+                              <template if:true={payReversalOnly}>
+                                 <div class="slds-form-element">
+                                    <label class="slds-form-element__label">
+                                       <abbr class="slds-required" title="required">*</abbr>
+                                       Reward Code
+                                    </label>
+                                    <div class="slds-form-element__control slds-m-bottom_medium">
+                                       <lightning-combobox class="rewardcheck" label="Reward Code"
+                                          variant="label-hidden" value={selectedRewardCode} options={rewardOptions}
+                                          onchange={handleRewardChange} disabled={isKeyFieldsDisabled}>
+                                       </lightning-combobox>
+                                    </div>
+                                 </div>
+                                 <template if:true={rewardHelp}>
+                                    <div class="slds-form-element__help">
+                                       {rewardHelp}
+                                    </div>
+                                 </template>
+                              </template>
+                              <template if:true={payOnly}>
+                                 <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                       <lightning-input-field
+                                             field-name= "Req_Effective_Date__c"
+                                             disabled = true
+                                             data-field= "Req_Effective_Date__c"
+                                             value={effectiveDate}>
+                                       </lightning-input-field>
+                                    </div>
+                                 </div>
+                              </template>
+
+                           </div>
+                        </template>
+                     </div>
+                  </div>
+                  <!-- ===================== -->
+                  <!-- HIDDEN REQUIRED FIELDS -->
+                  <!-- ===================== -->
+                  <div class="slds-hide">
+                     <lightning-input-field field-name="Req_Initiator__c"></lightning-input-field>
+                     <lightning-input-field field-name="Transaction_Type__c"></lightning-input-field>
+                     <lightning-input-field field-name="Req_Offer_Code__c"></lightning-input-field>
+                     <lightning-input-field field-name="Req_Reward_Code__c"></lightning-input-field>
+                  </div>
+                  <!-- ===================== -->
+                  <!-- ACTION BUTTONS -->
+                  <!-- ===================== -->
+                  <div class="slds-m-top_medium slds-grid slds-gutters slds-grid_align-end">
+                     <div class="slds-col slds-grow-none">
+                        <lightning-button type="submit" variant="brand" label="Save" disabled={isSaveDisabled}>
+                        </lightning-button>
+                     </div>
+                     <!--    disabled={isPromoLocked}> -->
+                     <div class="slds-col slds-grow-none">
+                        <lightning-button variant="neutral" label="Submit" onclick={handleExternalSubmit}
+                           disabled={isSubmitDisabled}>
+                        </lightning-button>
+                        <!--    disabled={isPromoLocked}> -->
+                     </div>
+                     <div class="slds-col slds-grow-none">
+                        <lightning-button variant="neutral" label="Close" onclick={handleClose} disabled={isBusy}>
+                        </lightning-button>
+                     </div>
+                  </div>
+               </lightning-record-edit-form>
+            </div>
+         </template>
+      </lightning-card>
+   </template>
+</template>

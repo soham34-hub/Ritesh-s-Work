@@ -1,0 +1,179 @@
+:host {
+    display: block;
+}
+
+/* --- Top action buttons: ~20% larger + spacing + subtle hover --- */
+.top-actions .top-action-button .slds-button {
+    /* Increase size */
+    transform: scale(1.2);
+    transform-origin: left center;
+    /* Add breathing room around buttons */
+    margin-right: 0.9rem;
+    /* Slightly beefier padding for presence */
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* Reduce tightness between the group and its container */
+.top-actions .slds-button-group {
+    gap: 0.75rem; /* works in modern browsers; margin-right also applied above */
+}
+
+/* Tasteful hover */
+.top-actions .top-action-button .slds-button:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    filter: brightness(1.02);
+}
+
+/* --- Footer buttons aligned right (we also use slds-grid_align-end in HTML) --- */
+.footer-actions {
+    column-gap: 0.75rem;
+}
+
+
+/* Highlighted disabled top-action-button */
+button.top-action-button.highlighted {
+    background-color: #4B0082 !important;     /* Deep Indigo */
+    border-color: #3a006a !important;
+    color: white !important;
+
+    /* Override Salesforce disabled gray-out */
+    opacity: 1 !important;
+    cursor: not-allowed !important;
+
+    /* Neon glow */
+    box-shadow: 0 0 8px #6a0dad;
+    filter: drop-shadow(0 0 6px #6a0dad);
+}
+
+
+/* Target lightning-button wrapper AND its internal <button> */
+:host ::deep lightning-button.highlighted button {
+    background-color: #4B0082 !important;
+    border-color: #3a006a !important;
+    color: white !important;
+    opacity: 1 !important;          /* overwrite disabled fade */
+    cursor: not-allowed !important;
+
+    /* Neon glow */
+    box-shadow: 0 0 10px #6a0dad !important;
+    filter: drop-shadow(0 0 6px #6a0dad);
+}
+
+
+/* ===========================================================
+   CYBERPUNK NEON BLUE GLOW FOR HIGHLIGHTED LIGHTNING-BUTTON
+   Works in Shadow DOM using ::deep
+   =========================================================== */
+
+:host ::deep lightning-button.highlighted button {
+    background-color: #00eaff !important;   /* Electric Cyan */
+    border-color: #00c4d6 !important;
+    color: #002831 !important;              /* Deep-tech blue */
+
+    opacity: 1 !important;                  /* Remove disabled gray fade */
+    cursor: not-allowed !important;
+
+    /* Cyberpunk glow layers */
+    box-shadow:
+        0 0 10px #00eaff,
+        0 0 20px #00eaff,
+        0 0 30px #00bcd4,
+        0 0 40px #00eaff;
+
+    animation: cyberpunkPulse 1.6s ease-in-out infinite;
+}
+
+/* ===========================================================
+   KEYFRAME ANIMATION — CYBERPUNK PULSE
+   =========================================================== */
+@keyframes cyberpunkPulse {
+    0% {
+        box-shadow:
+            0 0 8px  #00eaff,
+            0 0 18px #00eaff,
+            0 0 28px #00bcd4,
+            0 0 38px #00eaff;
+    }
+    50% {
+        box-shadow:
+            0 0 14px #7af7ff,
+            0 0 26px #33f7ff,
+            0 0 40px #00eaff,
+            0 0 55px #66faff;
+    }
+    100% {
+        box-shadow:
+            0 0 8px  #00eaff,
+            0 0 18px #00eaff,
+            0 0 28px #00bcd4,
+            0 0 38px #00eaff;
+    }
+}
+
+
+/* Cyberpunk neon on internal button */
+:host ::part(highlightedButton) {
+    background-color: #00eaff !important;
+    border-color: #00c4d6 !important;
+    color: #002831 !important;
+    opacity: 1 !important;
+    cursor: not-allowed !important;
+
+    box-shadow:
+        0 0 10px #00eaff,
+        0 0 20px #00eaff,
+        0 0 30px #00bcd4,
+        0 0 40px #00eaff;
+
+    animation: cyberpunkPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes cyberpunkPulse {
+    0% {
+        box-shadow:
+            0 0 8px  #00eaff,
+            0 0 18px #00eaff,
+            0 0 28px #00bcd4,
+            0 0 38px #00eaff;
+    }
+    50% {
+        box-shadow:
+            0 0 14px #7af7ff,
+            0 0 26px #33f7ff,
+            0 0 40px #00eaff,
+            0 0 55px #66faff;
+    }
+    100% {
+        box-shadow:
+            0 0 8px  #00eaff,
+            0 0 18px #00eaff,
+            0 0 28px #00bcd4,
+            0 0 38px #00eaff;
+    }
+}
+
+
+.form-lock-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.01); /* transparent */
+    z-index: 10; /* sits above form fields, below modals */
+}
+.wrapper-relative {
+    position: relative;
+}
+
+.wrapper-relative {
+    position: relative;
+}
+
+.fieldLocked {
+    background-color: rgba(200, 200, 200, 0.35); /* soft grey */
+    border-radius: 0.25rem;
+    pointer-events: none; /* ensures the box can't be edited */
+    opacity: 0.85; /* slight fade, looks disabled */
+}
