@@ -41,10 +41,11 @@ public class Enrollment_Activity_Handler {
     		ea.Req_Initiator_2__c = runningUser.Truist__Truist_User_ID__c;
 		}
 		}
-      }
-		if (!casesToUpdate.isEmpty()) {
+        if (!casesToUpdate.isEmpty()) {
 			update casesToUpdate.values();
 		}
+      }
+		
     
     public static String dropLeadingZeros (String inStr) {
     while ( !String.isBlank(inStr) && inStr.startsWith('0') ) inStr = inStr.removeStart('0');
