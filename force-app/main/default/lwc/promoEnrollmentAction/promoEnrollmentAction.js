@@ -1,7 +1,7 @@
 import { LightningElement, api, wire, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import USER_ID from '@salesforce/user/Id';
-import { getRecord } from 'lightning/uiRecordApi';
+import { getRecord ,updateRecord} from 'lightning/uiRecordApi';
 import { refreshApex } from '@salesforce/apex';
 import USER_NAME_FIELD from '@salesforce/schema/User.Name';
 import USER_TRUIST_ID_FIELD from '@salesforce/schema/User.truist__Truist_User_ID__c';
@@ -59,6 +59,7 @@ export default class PromoEnrollmentAction extends LightningElement {
     reliefProvided;
     reliefType;
     remediation;
+    forceStatusActive = false;
     ownerName;
     ownerDisplay;
     promoCode;
@@ -230,9 +231,13 @@ export default class PromoEnrollmentAction extends LightningElement {
                     this.enrollmentRecordSet = [...data];
                     console.log('enrollmentRecordSet ', this.enrollmentRecordSet);
                     if (this.editingRecordId) {
-                        this.enrollmentActivities.find(row => row.Id === this.editingRecordId);
-                        this.selectedActivity?.Req_Offer_Code__c || null;
-                        this.selectedActivity?.Req_Reward_Code__c || null;
+                        const currentActivity = this.enrollmentActivities.find(row => row.Id === this.editingRecordId);
+                        if(currentActivity){
+                            this.selectedActivity = currentActivity;
+                            this.selectedOfferCode = currentActivity.Req_Offer_Code__c || null;
+                            this.selectedRewardCode = currentActivity.Req_Reward_Code__c || null;
+                        }
+                        
 
 
                     }
@@ -729,6 +734,7 @@ export default class PromoEnrollmentAction extends LightningElement {
                 this.reliefProvided = data.reliefProvided;
                 this.reliefType = data.reliefType;
                 this.remediation = data.remediation;
+                this.forceStatusActive = data.forceStatusActive || false;
                 this.casePromoCode = data.promoCode;
                 this.nameDisplay = `Enrollment Activity Case ${data.caseNumber}`;
 
@@ -936,6 +942,25 @@ export default class PromoEnrollmentAction extends LightningElement {
          } /*/
         console.log('Offer Code:', this.selectedOfferCode);
         console.log('Enrollment Id:', this.selectedEnrollmentId);
+    }
+
+    handleOverrideCheckboxChange(event){
+        this.isDirty = true;
+        this.forceStatusActive = event.target.checked;
+
+        const fields  ={
+            Id : this.recordId,
+            Force_Status_Active__c : this.forceStatusActive
+        
+        };
+
+        updateRecord({fields})
+          .then(() =>{
+            console.log('case backgroundoverride updated successfully');
+          })
+          .catch(error =>{
+            console.error('Error updating backgroundoverride', error);
+          });
     }
 
 

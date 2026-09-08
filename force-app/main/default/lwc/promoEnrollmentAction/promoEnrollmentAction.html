@@ -92,6 +92,20 @@
                            <label class="slds-form-element__label">Remediation/Relief Amount</label>
                            <lightning-formatted-number value={remediation}></lightning-formatted-number>
                         </div> 
+                        <div class = "slds-form-element slds-m-bottom_medium">
+                             <template if:true = {canSubmit}>
+                                 <lightning-input type="checkbox" label="Force Promotion status" 
+                                                 checked={forceStatusActive} onchange={handleOverrideCheckboxChange} 
+                                                 disabled = {isKeyFieldsDisabled}>
+                                 </lightning-input>
+                             </template>
+                             <template if:false = {canSubmit}>
+                                 <lightning-input type="checkbox" label="Force Promotion status" 
+                                                 checked={forceStatusActive}  
+                                                 disabled = "true">
+                                 </lightning-input>
+                             </template>
+                        </div>
                      </div>
                   </div>
                   <div class="slds-col slds-size_1-of-2">
