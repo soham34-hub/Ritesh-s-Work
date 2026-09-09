@@ -54,7 +54,7 @@ system.debug('Params: ' +
     caseData = [SELECT id, Account_Number__c, Promotion_Account_Opening_Date__c, Promotion_CIF__c,
                  Promotion_Account_Product_Code__c,caseNumber,Force_Status_Active__c, Promotion_Account_Status__c
                  From case where id =: caseId];
-                                                if(caseData[0].Force_Status_Active__c == true && caseData[0].Promotion_Account_Status__c != 'ACTIVE'){
+                                                if(caseData[0].Force_Status_Active__c == true && caseData[0].Promotion_Account_Status__c != 'ACTIVE' && runingUserProfileAndPermissionSets().submitButton){
                                                     
                                                    Case caseToUpdateforOveride = new Case(Id = caseId,
                                                                                          Promotion_Account_Status__c = 'ACTIVE');
