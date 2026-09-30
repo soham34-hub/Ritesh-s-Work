@@ -237,7 +237,7 @@ export default class PromoEnrollmentAction extends LightningElement {
                             this.selectedOfferCode = currentActivity.Req_Offer_Code__c || null;
                             this.selectedRewardCode = currentActivity.Req_Reward_Code__c || null;
                         }
-                        
+
 
 
                     }
@@ -269,7 +269,7 @@ export default class PromoEnrollmentAction extends LightningElement {
     //             this.noActivitiesMessage = data.length === 0;
     //             this.enrollmentError = null;
 
-    // //fix loading of activities 
+    // //fix loading of activities
 
     //     this.enrollmentRecordSet = [...data];
     //     console.log('this.enrollmentRecordSet ' , this.enrollmentRecordSet);
@@ -462,7 +462,7 @@ export default class PromoEnrollmentAction extends LightningElement {
 
     handlePromoCodeChange(event) {
         this.isDirty = true;
-        this.promoCodeValue = event.target.value;
+        this.promoCodeValue = event.target.value.toUpperCase();
     }
 
     get showPromoCode() {
@@ -533,16 +533,16 @@ export default class PromoEnrollmentAction extends LightningElement {
     }
 
     /*
-        
+
     openActivityForEdit(row) {
         // ---- basic form state ----
         this.showForm = true;
         this.isEditMode = true;
         this.editingRecordId = row.Id;
-    
+
         this.zafinStatusDisplay = row.Zafin_Request__c || 'Not Sent';
         this.zafinTs = row.Zafin_Request_DateTime__c || 'Unprocessed';
-    
+
         // ---- resolve action ----
         const txnType = (row.Transaction_Type__c || '').trim();
         if (txnType === 'Force Enroll') {
@@ -555,26 +555,26 @@ export default class PromoEnrollmentAction extends LightningElement {
             this.activeAction = null;
         }
         this.transactionTypeValue = txnType;
-    
+
         // ---- promo code ----
         this.promoCodeValue = row.Req_Promo_Code__c || '';
         this.promoInputValue = this.promoCodeValue;
-    
+
         // ---- capture record values (PENDING state) ----
         this.pendingOfferCode = row.Req_Offer_Code__c || null;
         this.pendingRewardCode = row.Req_Reward_Code__c || null;
-    
+
         // ---- clear UI selections ----
         this.selectedOfferCode = null;
         this.selectedEnrollmentId = null;
         this.selectedRewardCode = null;
         this.rewardOptions = [];
         this.rewardHelp = null;
-    
+
         // ---- attempt apply (safe even if options not loaded yet) ----
         this._applyPendingOffer();
     }
-    
+
     */
 
 
@@ -652,7 +652,7 @@ export default class PromoEnrollmentAction extends LightningElement {
         }
 
         this.transactionTypeValue = txnType;
-        this.promoCodeValue = row.Req_Promo_Code__c || '';
+        this.promoCodeValue = (row.Req_Promo_Code__c || '').toUpperCase();
         this.pendingOfferCode = row.Req_Offer_Code__c || null;
         this.pendingRewardCode = row.Req_Reward_Code__c || null;
         this.selectedOfferCode = null;
@@ -837,7 +837,7 @@ export default class PromoEnrollmentAction extends LightningElement {
         console.log('show casePromoCode ', this.casePromoCode);
         // Force Enroll only → default from Case
         if (action === 'ENROLL' && this.casePromoCode) {
-            this.promoCodeValue = this.casePromoCode;
+            this.promoCodeValue = this.casePromoCode.toUpperCase();
         }
         console.log('STATE AFTER _startNew:', {
             action: this.activeAction,
@@ -951,7 +951,7 @@ export default class PromoEnrollmentAction extends LightningElement {
         const fields  ={
             Id : this.recordId,
             Force_Status_Active__c : this.forceStatusActive
-        
+
         };
 
         updateRecord({fields})
