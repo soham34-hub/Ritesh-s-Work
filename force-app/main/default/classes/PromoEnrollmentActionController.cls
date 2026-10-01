@@ -15,8 +15,8 @@ public with sharing class PromoEnrollmentActionController {
     // ----------------- Helpers -----------------
     private static Case getCaseLite(Id caseId) {
         if (caseId == null) throw new AuraHandledException('Missing caseId.');
-        return [SELECT Id, CaseNumber, Promotion_Promo_Code__c, Account_Number__c,
-                Cat_Level_5__c,Promotion_CIF__c,Promotion_Account_Product_Code__c,Promotion_Account_Status__c,
+        return [SELECT Id, CaseNumber, Promotion_Promo_Code__c, Account_Number__c, 
+                Cat_Level_5__c,Single_Use_Promo_Code__c,Promotion_CIF__c,Promotion_Account_Product_Code__c,Promotion_Account_Status__c,
                 Promotion_Account_Opening_Date__c ,Servicing_Challenges_Category__c,Initiative_Tracking__c,Refund__c,Type_of_Refund__c,Remediation__c,Force_Status_Active__c
                 FROM Case WHERE Id = :caseId LIMIT 1]; 
     }
@@ -102,7 +102,7 @@ system.debug('Params: ' +
         CaseInfo info = new CaseInfo();
         info.caseNumber    = c.CaseNumber;
         info.accountNumber = c.Account_Number__c;       // Case custom field
-        info.promoCode     = c.Cat_Level_5__c; // Case custom field
+        info.promoCode     = c.Single_Use_Promo_Code__c; // Case custom field
         info.servicesChallengingCategory = c.Servicing_Challenges_Category__c;
         info.initiativeTracking = c.Initiative_Tracking__c;
         info.reliefProvided = c.Refund__c;

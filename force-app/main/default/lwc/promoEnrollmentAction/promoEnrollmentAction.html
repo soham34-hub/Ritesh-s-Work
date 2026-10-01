@@ -91,20 +91,6 @@
                         <div class="slds-form-element slds-m-bottom_medium">
                            <label class="slds-form-element__label">Remediation/Relief Amount</label>
                            <lightning-formatted-number value={remediation}></lightning-formatted-number>
-                        </div> 
-                        <div class = "slds-form-element slds-m-bottom_medium">
-                             <template if:true = {canSubmit}>
-                                 <lightning-input type="checkbox" label="Force Promotion status" 
-                                                 checked={forceStatusActive} onchange={handleOverrideCheckboxChange} 
-                                                 disabled = {isKeyFieldsDisabled}>
-                                 </lightning-input>
-                             </template>
-                             <template if:false = {canSubmit}>
-                                 <lightning-input type="checkbox" label="Force Promotion status" 
-                                                 checked={forceStatusActive}  
-                                                 disabled = "true">
-                                 </lightning-input>
-                             </template>
                         </div>
                      </div>
                   </div>
@@ -258,6 +244,20 @@
                   <!-- ACTION BUTTONS -->
                   <!-- ===================== -->
                   <div class="slds-m-top_medium slds-grid slds-gutters slds-grid_align-end">
+                     <div class="slds-col slds-grow-none">
+                        <template if:true = {canSubmit}>
+                            <lightning-input type="checkbox" label="Force Promotion status"
+                                            checked={forceStatusActive} onchange={handleOverrideCheckboxChange}
+                                            disabled = {isKeyFieldsDisabled}>
+                            </lightning-input>
+                        </template>
+                        <template if:false = {canSubmit}>
+                            <lightning-input type="checkbox" label="Force Promotion status"
+                                            checked={forceStatusActive}
+                                            disabled = "true">
+                            </lightning-input>
+                        </template>
+                     </div>
                      <div class="slds-col slds-grow-none">
                         <lightning-button type="submit" variant="brand" label="Save" disabled={isSaveDisabled}>
                         </lightning-button>
