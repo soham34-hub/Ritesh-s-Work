@@ -1,0 +1,2152 @@
+
+<apex:page standardController="Case" extensions="CreditDisputeHelper,CreditDisputeEdit_ControllerExtension,CMIClientManagement_ControllerExtension" sidebar="false">
+    <apex:messages style="color:red;font-weight:bold;" />
+    <apex:form id="form" >
+        
+        <!--The below script is added for  remove the focus from source received date field. By default the cursor should not present in the source received date field-->
+        <script> 
+        function setFocusOnLoad() 
+        { 
+            //document.getElementById('{!$Component.refreshPageSection}').focus(); 
+            // document.getElementById("{!$Component.form.ParentPicklist}").hidden=true;
+        } 
+        onload=setFocusOnLoad; 
+        </script>
+        <style>
+            .picksize{
+            width:250px;
+            }
+        </style>
+        <apex:outputField value="{!case.Special_Initiatives__c}" rendered="false" />
+        <apex:outputField value="{!case.Verify_Client_Check__c}" rendered="false" />
+        <apex:outputField value="{!Case.Product_Code__c}" rendered="false" />
+        <!--Commented as part of B-345751 <!--apex:outputField value="{!case.Removal_Of_Delinquences_For_Month_Year_s__c}" rendered="false"/ -->        
+        
+        <!----------------------------- This fields is hidden field for depended field Account Type Detail and its on pageload 01/06/2017 -------------------------------->            
+        <!--  <apex:inputField value="{!case.Account_Type__c}" id="ParentPicklist"  rendered="{!(case.Account_Type__c = 'Debit Card')}" /> -->
+        <!----------------------------- This fields is hidden field for depended field Account Type Detail and its on pageload 01/06/2017-------------------------------->                                                  
+        
+        
+        <apex:pageBlock title="Credit Dispute Case" id="pgBlock" mode="edit">
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton action="{!save}" value="Save" />
+                <apex:commandButton action="{!cancel}" value="Cancel" />
+            </apex:pageBlockButtons>
+            
+            
+            
+            
+            <!-- ******************* EDIT CASE DETAILS SECTION ********************** -->  
+            
+            <apex:actionRegion >
+                <apex:pageBlockSection title="Case Type Details" columns="2" id="refreshPageSection" collapsible="true">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Case Type"/>                
+                        <apex:actionRegion >
+                            <apex:inputField value="{!case.Type}" required="true"> 
+                                <!--Added DisputeLOB in rerendered Attribute as part of US1610718,US1610720(Mohan changes)-->
+                                <apex:actionSupport event="onchange" action="{!assignDisputeCategoryBasisOfCaseType}" rerender="eOscarIDSection,DisputeLOB,LetterSection,letterSectionForInquiryRemoval,MissingIformationPanel,DealershipInformationPanel,DealershipSection,InquiryPanel,InquirySection,CaseClosureSection,CaseClosureSection1,sectionForValidationInternalRequest,sectionForMSPTask,disputeCategory,refreshComplexDispute,LetterSection,InquiryRemovalSection1,InquiryRemovalSection, sectionOrigin, caseTypeInternalRequestSection, CaseClosurePanel, LetterDetailsPanel, MissingIformationPanelForInquiryRemoval, caseTypeMSPTaskSection, MainPanel, ClientInfoPanelForMSPTask, ClientInfoPanel1, ClientInfoSection2,prioritySection,CaseClosurePanel,requestTypePopUp,accountTypeDetail" status="caseTypeChangeStatus" />
+                            </apex:inputField>
+                        </apex:actionRegion>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:outputField value="{!case.caseNumber}"/>
+                    
+                    <br/>               
+                    <apex:pageBlockSectionItem id="prioritySection" rendered="{!case.Type!='MSP Task'}"> <!--Added for MSP Task-->
+                        <apex:outputLabel value="Priority" rendered="{!case.Type!='MSP Task'}" />
+                        <apex:outputPanel >
+                            <apex:inputField value="{!case.priority}" rendered="{!case.Type='Internal Request'}" required="true" /> <!--added for Case Type=Validation and Internal Request-->
+                            <!-- Mohan Changes US1610716 -->
+                            <apex:inputField value="{!case.priority}" rendered="{!(($Profile.Name='Credit Dispute Manager' || $Profile.Name='Credit Dispute WFC' ) && (case.Type='Dispute' || case.Type = 'Deposit Dispute' || case.Type='QWR'))}" required="true" />
+                            <!-- Mohan Changes US1610716 -->
+                            <apex:outputField value="{!case.priority}" rendered="{!($Profile.Name!='Credit Dispute Manager' && $Profile.Name!='Credit Dispute WFC' ) && (case.Type='Dispute' || case.Type = 'Deposit Dispute' || case.Type='QWR')}"/>
+                            <apex:outputField value="{!case.priority}" rendered="{! case.Type='Inquiry Removal Request'}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                
+                <apex:outputPanel >
+                    <apex:actionStatus id="caseTypeChangeStatus">
+                        <apex:facet name="start">
+                            <div style="text-align:center">
+                                <img src="{!$Resource.SpinIcon}"/>
+                            </div>
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputPanel>
+                
+                
+                
+                <apex:pageBlockSection id="caseTypeInternalRequestSection" > 
+                    <apex:pageBlockSectionItem rendered="{!case.Type='Internal Request'}">
+                        <apex:outputLabel value="Case Origin"/>
+                        <apex:inputField value="{!case.Origin}" required="true"/>
+                    </apex:pageBlockSectionItem>
+                    
+                    
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type='Internal Request'}">
+                        <apex:outputLabel value="Source Received Date"/> <!--//Please check with Pat, this field was earlier used only for ES record type. For CMI 2014, source received date/time field was introduced. So, instead of this field it should be Source Receieved Date/Time field. -->
+                        <apex:inputField value="{!case.Source_Received_Date__c}" required="true"/>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type='Internal Request'}">    
+                        <c:CustomLookup value="{!Case.Submitter__c}" object="Contact" objectName="Case" fieldName="Submitter__c" displayFields="Email,Title,Phone" required="{!(case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)')}"/> <!--  //Not sure whether required attribute exists for Submitter Custom lookup. Please confirm and then include.             -->
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type='Internal Request'}"/>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type='Internal Request'}">
+                        <apex:outputLabel value="Source of Feedback"/> <!-- source of feedback1-->
+                        <apex:inputField value="{!case.Call_Source__c}" required="true"/>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type='Internal Request'}">
+                        <apex:outputLabel value="Mandated Response SLA Date"/>
+                        <apex:outputField value="{!case.Mandated_Response_SLA_Date__c}"/>
+                    </apex:pageBlockSectionItem>
+          <!--Changes start for September 2022 - made client feedback non required-->          
+                    <apex:pageBlockSectionItem rendered="{!case.Type='Internal Request'}">          
+                        <apex:outputlabel value="Client Feedback" />
+                        <apex:define name="requiredClientFeedback">
+                            <!--div class="requiredInput">
+                                <div class="requiredBlock"></div-->
+                                <apex:inputTextArea value="{!case.Description}" cols="45" rows="7" />
+                            <!--/div-->
+                        </apex:define>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                
+                <apex:pageBlockSection id="caseTypeMSPTaskSection" > <!--Added for MSP Task-->
+                    <apex:pageBlockSectionItem rendered="{!case.Type='MSP Task'}">
+                        <apex:outputLabel value="Task ID"/>
+                        <apex:define name="requiredClientFeedback">
+                            <div class="requiredInput">
+                                <div class="requiredBlock" style="{!IF(case.Type='MSP Task','background-color:C00','background-color:transparent')}"></div>
+                                <apex:inputField value="{!case.Task_ID__c}" />
+                            </div>
+                        </apex:define>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type='MSP Task'}">
+                        <apex:outputLabel value="Task Information"/>
+                        <apex:define name="requiredClientFeedback">
+                            <div class="requiredInput">
+                                <div class="requiredBlock"></div>
+                                <apex:inputTextArea value="{!case.Task_Information__c}" required="True" cols="45" rows="7" />
+                            </div>
+                        </apex:define>               
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type='MSP Task'}">
+                        <apex:outputLabel value="Mandated Response SLA Date"/>
+                        <apex:outputField value="{!case.Mandated_Response_SLA_Date__c}"/>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type='MSP Task'}">
+                        <apex:outputLabel value="Source Received Date"/> <!--//Please check with Pat, this field was earlier used only for ES record type. For CMI 2014, source received date/time field was introduced. So, instead of this field it should be Source Receieved Date/Time field. -->
+                        <apex:inputField value="{!case.Source_Received_Date__c}" required="true"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection> 
+                
+                <apex:pageBlockSection id="sectionOrigin">    
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task'}"> <!--Added for MSP Task-->
+                        <apex:outputlabel value="Case Origin" />
+                        <apex:actionRegion > 
+                            <apex:inputField value="{!case.Origin}" required="True">
+                                <apex:actionSupport event="onchange" reRender="ClientInfoPanel1,FieldsOnBypassingSearchProcess"/>
+                            </apex:inputField>
+                        </apex:actionRegion>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task'}"> <!--Added for MSP Task-->  
+                        <apex:outputlabel value="Source Received Date" /> 
+                        <apex:inputField value="{!case.Source_Received_Date__c}" required="True"/>
+                    </apex:pageBlockSectionItem>   
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task'}">   <!--Added for MSP Task-->       
+                        <apex:outputlabel value="Source of Feedback" /><!-- source of feedback2 -->
+                        <apex:actionRegion > 
+                            <apex:inputField value="{!case.Call_Source__c}" required="true"> 
+                                <apex:actionSupport event="onchange" action="{!assignPriorityOnTheBasisOfSourceOfFeedback}"  rerender="refreshPageSection,eOscarIDSection,prioritySection,sectionOrigin,LetterSection,LetterDetailsPanel,letterSectionForInquiryRemoval,MainPanel,nameSearch,clientSearchYes,accountTypeDetail,DOFD1,Principal1,CurrentLoanBalance1,PrincipalName1,SuspenseBalance1,PrincipalAddress1,EscrowBalance1,PrincipalAddress2,accountTypeDetail3,accountTypeDetail1,CaseClosurePanel,CaseClosureSection,CaseClosureSection1" status="sourceOfFeedbackChange" /> <!-- 31/05/2017 -->
+                            </apex:inputField>
+                        </apex:actionRegion>                    
+                    </apex:pageBlockSectionItem>
+                    
+                    <!-- Added By Tanmay For Credit Dispute Case Escalation Starts -->
+                    <!--Commented as part of CD Sept Release '21-->
+                    <!--apex:pageBlockSectionItem rendered="{!case.Type=='Dispute'}"> 
+<apex:outputLabel value="Lawsuit/Settlement/Rpt Matrix Procedure? ">
+<img src="/s.gif" alt="Help" class="helpIcon" title="Is Dispute Related to Lawsuit or Settlement? OR Dispute cannot be resolved due to questions around Credit Reporting Matrix Procedure?"/>
+</apex:outputLabel>
+<apex:inputField value="{!case.Lawsuit_Settlement_Rpt_Matrix_Procedure__c}" required="false"/>
+</apex:pageBlockSectionItem>
+
+<apex:pageBlockSectionItem rendered="{!case.Type=='Dispute'}"/>
+<apex:pageBlockSectionItem rendered="{!case.Type=='Dispute'}" >
+<apex:outputLabel >{!$ObjectType.Case.Fields.Escalation_Type__c.label}  </apex:outputLabel>
+<apex:inputField value="{!Case.Escalation_Type__c}" required="true"/>
+</apex:pageBlockSectionItem>
+<apex:pageBlockSectionItem rendered="{!case.Type=='Dispute'}"/-->
+                    <!-- Added By Tanmay For Credit Dispute Case Escalation Ends -->
+                    
+                    <apex:pageBlockSectionItem id="eOscarIDSection" rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='Inquiry Removal Request' && case.Type!='MSP Task'}">  <!--Added for MSP Task-->
+                        <apex:outputLabel value="eOscar ID (Initial)"/>
+                        <apex:outputPanel > 
+                            <apex:inputField value="{!case.eOscar_ID__c}" rendered="{!case.Call_Source__c!='eOscar(Non Fraud)' && case.Call_Source__c!='eOscar(Fraud)'}" />
+                            <apex:outputField value="{!case.eOscar_ID__c}" rendered="{!case.Call_Source__c='eOscar(Non Fraud)' || case.Call_Source__c='eOscar(Fraud)'}" />
+                        </apex:outputPanel> 
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='Inquiry Removal Request' && case.Type!='MSP Task'}"/> <!--Added for MSP Task-->
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='Inquiry Removal Request' && case.Type!='MSP Task'}">    <!--Added for MSP Task-->      
+                        <apex:outputlabel value="eOscar ID (Resolution)" /> 
+                        <apex:inputField value="{!case.eOscar_ID_Secondary__c}" />
+                    </apex:pageBlockSectionItem>
+                    <!--
+<apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='Inquiry Removal Request' && case.Type!='MSP Task'}"/> 
+
+<apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='Inquiry Removal Request' && case.Type!='MSP Task'}">         
+<apex:outputlabel value="eOscar ID (Final)" /> 
+<apex:inputField value="{!case.eOscar_ID_Final__c}" />
+</apex:pageBlockSectionItem>
+-->
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task' && case.Type!='Dispute' && case.Type!='QWR'}"/> <!--Added for Inquiry Removal Request-->
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task'}"> <!--Added for MSP Task-->
+                        <c:CustomLookup value="{!Case.Submitter__c}" object="Contact" objectName="Case" fieldName="Submitter__c" displayFields="Email,Title,Phone" required="{!(case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)')}"/>
+                        <!--required="{!(case.Call_Source__c='CFS' || case.Call_Source__c='MERT' || case.Call_Source__c='Social Media' || case.Call_Source__c='CARRT' || case.Call_Source__c='CLEAR' || case.Call_Source__c='Internal Dept' || case.Call_Source__c='Client Services')}" /> <!-- Instead of CFS, CRT was present in the condition corrected it. -->
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task'}">      <!--Added for MSP Task-->
+                        <apex:outputlabel value="Mandated Response SLA Date" /> 
+                        <apex:outputField value="{!case.Mandated_Response_SLA_Date__c}"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                
+                <apex:outputPanel >
+                    <apex:actionStatus id="sourceOfFeedbackChange">
+                        <apex:facet name="start">
+                            <div style="text-align:center">
+                                <img src="{!$Resource.SpinIcon}"/>
+                            </div>
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputPanel>
+                
+                <!-- Start- Credit Disputes Warranty Fix-2 Remove Dispute Category
+<apex:pageBlockSection id="disputeCategory" >
+<apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task'}">  
+<apex:outputLabel value="Dispute Category" />
+<apex:actionRegion >
+<apex:inputField value="{!case.Dispute_Category__c}" required="true">
+<apex:actionSupport event="onchange" rerender="disputeCategory" status="changeDisputeCategory"/>
+</apex:inputField>
+</apex:actionRegion>
+</apex:pageBlockSectionItem>
+
+<apex:pageBlockSectionItem rendered="{!((case.Type='Dispute' || case.Type='Inquiry Removal Request') && case.Dispute_Category__c='Other')}">
+<apex:outputLabel value="Other Dispute Category" />                        
+<apex:inputField value="{!case.Other_Dispute_Category__c}" required="true"/>                       
+</apex:pageBlockSectionItem>
+</apex:pageBlockSection>
+
+<apex:outputPanel >
+<apex:actionStatus id="changeDisputeCategory">
+<apex:facet name="start">
+<div style="text-align:center">
+<img src="{!$Resource.SpinIcon}"/>
+</div>
+</apex:facet>
+</apex:actionStatus>
+</apex:outputPanel> End- Credit Disputes Warranty Fix-2-->
+                
+                <apex:pageBlockSection id="refreshComplexDispute">    
+                    <!--<apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task'}"> 
+<apex:outputLabel value="Complex Dispute?"/>
+<apex:inputField value="{!case.Complex_Dispute__c}" required="{!IF((case.Type='Dispute' || case.Type='QWR'),true,false)}" />
+-->
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task'}" />
+                    
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='Inquiry Removal Request' && case.Type!='MSP Task'}">     <!--Added for MSP Task-->    
+                        <apex:outputlabel value="Image Count" />
+                        <apex:outputField value="{!case.Image_Count__c}"  />
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!case.Type='Inquiry Removal Request'}"/>
+                    <!--Changes start for September 2022 - made client feedback non required--> 
+                    <apex:pageBlockSectionItem rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task'}">   <!--Added for MSP Task-->       
+                        <apex:outputlabel value="Client Feedback" />
+                        <apex:define name="requiredClientFeedback">
+                            <!--div class="requiredInput">
+                                <div class="requiredBlock"></div-->
+                                <apex:inputTextArea value="{!case.Description}" cols="50" rows="7" />
+                            <!--/div-->
+                        </apex:define>
+                    </apex:pageBlockSectionItem>
+                    <!--Added mandatedResponseSlaOverrideDate US1610719(Mohan changes)-->
+                    <apex:pageBlockSectionItem rendered="{!case.Type = 'Deposit Dispute'}"  >
+                        <apex:outputLabel value="Mandated Response SLA Override Date" />
+                        <apex:inputField value="{!case.Mandated_Response_SLA_Override_Date__c}" required="true"/>
+                    </apex:pageBlockSectionItem>
+                </apex:pageblockSection>
+            </apex:actionRegion>
+            
+            <!-- ********************* CLIENT INFORMATION SECTION ********************** --> 
+            
+            <apex:outputPanel id="MainPanel" >         
+                <apex:outputPanel id="ClientInfoPanel1" >             
+                    <apex:pageBlockSection rendered="{!case.Type != 'MSP Task' && case.Type!='Validation'}" title="Client Information" columns="1"> 
+                        <!--Poorva -->
+                        <apex:pageBlockSectionItem >
+                            <apex:outputlabel value="Client Indicator"/>
+                            <apex:actionRegion > 
+                                <apex:inputField value="{!case.Client_Indicator__c}" required="{! !(case.BypassSearchProcess__c)}">
+                                    <apex:actionSupport event="onchange"    rerender="ClientInfoPanel1,nameSearch,renderAccountDetails" status="selectAccountStatus"/>
+                                </apex:inputField>
+                            </apex:actionRegion>
+                        </apex:pageBlockSectionItem>
+                        <!--Poorva-->
+                        
+                        
+                        <apex:pageblocksectionitem rendered="{!(case.Type <> 'MSP Task' && case.Origin != 'Webform Assembly v1.0') }">
+                            <apex:outputlabel value="Is this a Client?"  /> 
+                            <apex:actionRegion >                            
+                                <apex:inputField value="{!case.Is_this_a_Client__c}" required="true"> 
+                                    <apex:actionSupport event="onchange" action="{!clearClientInformationFields}" rerender="ClientInfoPanel1,nameSearch,renderAccountDetails" status="selectAccountStatus"/>
+                                </apex:inputField> 
+                            </apex:actionRegion> 
+                        </apex:pageblocksectionitem>  
+                        
+                        <apex:pageblocksectionitem rendered="{!(case.Type <> 'MSP Task' && (case.Origin = 'Webform Assembly v1.0' && NOT(case.BypassSearchProcess__c))) }">
+                            <apex:outputlabel value="Is this a Client?"  /> 
+                            <apex:actionRegion >                            
+                                <apex:inputField value="{!case.Is_this_a_Client__c}" required="true"> 
+                                    <apex:actionSupport event="onchange" rerender="ClientInfoPanel1,nameSearch,renderAccountDetails" status="selectAccountStatus"/>
+                                </apex:inputField> 
+                            </apex:actionRegion> 
+                        </apex:pageblocksectionitem>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageblockSection rendered="{!case.Is_this_a_Client__c='Yes' && case.Type != 'MSP Task' && case.Type!='Validation'}">
+                        <!-- Commented Search CIS Client Button for Apr'22 Release-->
+                        <!--apex:commandButton style="margin-left:47%" immediate="true" action="{!showModalDialog}" reRender="accountSearch,SearchComponent,nameSearch,clientSearchYes,selectClientInfo,LetterDetailsPanel" value="Search Client" rendered="{!case.Client_Indicator__c='hST' && (case.Origin != 'Webform Assembly v1.0')}"/> 
+                        <apex:commandButton style="margin-left:47%" immediate="true" action="{!showModalDialog}" reRender="accountSearch,SearchComponent,nameSearch,clientSearchYes,selectClientInfo,LetterDetailsPanel" value="Search Client" rendered="{!case.Client_Indicator__c='hST' && (case.Origin = 'Webform Assembly v1.0' && NOT(case.BypassSearchProcess__c))}"/-->
+                        <apex:commandButton style="margin-left:37%" immediate="true" action="{!showCIFModalDialog}" reRender="accountSearch1,SearchComponent,nameSearch,clientSearchYes,selectClientInfo,LetterDetailsPanel" value="Search Client" rendered="{!case.Is_this_a_Client__c='Yes' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist')}" disabled="{!case.BypassSearchProcess__c}"/>                                           
+                        <!-- Mohan Changes for US1610716 -->
+                        <apex:pageBlockSection rendered="{!((Case.Type='Dispute' ||Case.Type = 'Deposit Dispute' || Case.Type='QWR') && ((Case.Call_Source__c='eOscar(Fraud)'||Case.Call_Source__c='eOscar(Non Fraud)') ||case.BypassSearchProcess__c && (case.Origin = 'Webform Assembly v1.0')))}">
+                            <br/>
+                        </apex:pageBlockSection>
+                        <!-- Mohan Changes for US1610716 -->
+                        <apex:commandButton action="{!verifyCISClient}" style="margin-left:10%" immediate="true" value="Verify Client" reRender="nameSearch,ClientSectionAfterBypassingSearchClient,cisVerifyResults,jointAccountComponent"  status="VerifyCISClientStatus" rendered="{!case.Client_Indicator__c='hST' && ((Case.Type='Dispute' || Case.Type = 'Deposit Dispute' || Case.Type='QWR') && ((Case.Call_Source__c='eOscar(Fraud)'||Case.Call_Source__c='eOscar(Non Fraud)') ||case.BypassSearchProcess__c))}"/>    
+                        <!--<c:Modal_Dialog id="accountSearch" visible="{!assignArrangement.assignIsModalOpen}">
+                            <c:SearchComponent caseReference="{!case}" invokePoint="fromCreditDispute" accountDetailsList="{!assignAccountDetails}" modalClose="{!assignArrangement}"/>
+                            <br/>                   
+                        </c:Modal_Dialog>-->
+                        <!--Poorva -->
+                        <c:Modal_Dialog id="accountSearch1" visible="{!assignArrangement.assignIsModalOpenCIF}">
+                            <c:CIFSearchComponent classic="true" caseReference="{!case}" invokePoint="fromCreditDispute" accountDetailsList="{!assignAccountDetails}" modalClose="{!assignArrangement}"/>
+                            <br/>                   
+                        </c:Modal_Dialog> 
+                        <!--Poorva-->
+                        
+                        <c:Modal_Dialog id="jointAccountComponent" visible="{!openAccountList}" height="40%" top="30%">
+                            <!--<c:JointAccountComponent caseReference="{!case}" searchResults="{!assignSearchResultsForJointAccount}"/>
+<br/> -->   
+                            <!--<apex:pageblock >
+                                <div style="border : solid 2px #000000; padding : 4px; height : '200px'; overflow : auto;">    
+                                    <apex:dataTable value="{!assignSearchResultsForJointAccount}" var="result" rowClasses="odd,even" styleClass="list">
+                                        <apex:column >
+                                            <apex:facet name="header">Select</apex:facet>
+                                            <input type="radio" name="Selected" value="{!result.PartyId}"/>
+                                            <apex:param name="Selected" value="{!result.PartyId}"/>                        
+                                        </apex:column>
+                                        <apex:column value="{!result.Name}">
+                                            <apex:facet name="header">Name</apex:facet>
+                                        </apex:column>
+                                        
+                                        <apex:column value="{!result.TIN}">
+                                            <apex:facet name="header">TIN</apex:facet>
+                                        </apex:column>
+                                        
+                                        <apex:column >
+                                            <apex:facet name="header">DOB</apex:facet>
+                                            <apex:outputText value="{0,date,MM'-'dd'-'yyyy}"><apex:param value="{!result.DOB}"/></apex:outputText>
+                                        </apex:column>
+                                        
+                                        <apex:column value="{!result.AddressLine1}">
+                                            <apex:facet name="header">Address Line1</apex:facet>
+                                        </apex:column>
+                                        
+                                        <apex:column value="{!result.City}">
+                                            <apex:facet name="header">City</apex:facet>
+                                        </apex:column>
+                                        
+                                        <apex:column value="{!result.State}">
+                                            <apex:facet name="header">State</apex:facet>
+                                        </apex:column>
+                                        
+                                        <apex:column value="{!result.Zip}">
+                                            <apex:facet name="header">Zip</apex:facet>
+                                        </apex:column>
+                                        
+                                        <apex:column value="{!result.Country}">
+                                            <apex:facet name="header">Country</apex:facet>
+                                        </apex:column>
+                                    </apex:dataTable>
+                                </div>                                                
+                            </apex:pageblock>-->
+                            <div align='center'><apex:commandButton action="{!selectPartyAndAssignValues}" immediate="true" status="jointAccStatus" reRender="renderAccountDetails,clientDetails,accountSearch,nameSearch,accountSearch5,nameSearch5,accountSearch4,nameSearch4,LOBAccountDetailsPanel,accountSearch3,nameSearch3,accountSearch2,nameSearch2,accountSearch1,nameSearch1,accountDetailsAdded, ClientInfoPanelForComplaint, clientfollowupsection, ClientFollowUpSection, clientFollowUpSection, contactMethodFields,renderAccountDetailsForCreateClient,ClientInfoPanel,ClientInfoPanel1,ClientInfoPanel2,ClientInfoPanel3,ClientInfoPanel4,LOBAccountDetailsPanel,lobAccountDetailsPanel,LobAccountDetailsPanel,accountFields,nameSearch,cisVerifyResults,jointAccountComponent,ClientSectionAfterBypassingSearchClient" value="Select & Return To Case"/></div>
+                            <apex:actionStatus id="jointAccStatus">
+                                <apex:facet name="start">
+                                    <div style="text-align:center;">
+                                        <img src="{!$Resource.SpinIcon}"/>
+                                        <span class="waitingDescription">Verifying.Please wait...</span>
+                                    </div>
+                                </apex:facet>
+                            </apex:actionStatus>
+                        </c:Modal_Dialog>
+                        
+                    </apex:pageBlockSection>
+                    <apex:outputPanel id="cisVerifyResults">
+                        <!--<div style="text-align:center">
+<apex:outputText Style="font-weight:bold;color:red;" value="{!assignInfoMessage}" rendered="{!(assignInfoMessage!=Null && assignInfoMessage!='')}"/>
+</div>  -->  
+                        
+                        <apex:pageBlockSection columns="1" rendered="{!(assignInfoMessage!=Null && assignInfoMessage!='')}">                            
+                            <apex:outputText Style="font-weight:bold;color:red;margin-left:21%;" value="{!assignInfoMessage}"/>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>    
+                    <apex:actionStatus id="VerifyCISClientStatus">
+                        <apex:facet name="start">
+                            <div style="margin-left:26%">
+                                <img src="{!$Resource.SpinIcon}"/>
+                                <span class="waitingDescription">Verifying.Please wait...</span>
+                            </div>
+                        </apex:facet>
+                    </apex:actionStatus>
+                    
+                    
+                    <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT
+                    <apex:pageblockSection rendered="{!(case.Is_this_a_Client__c='No' && case.Client_Indicator__c='hST' && case.Type != 'MSP Task' && case.Type!='Validation')}">      
+                        <apex:commandButton style="margin-left:37%" immediate="true" action="{!showCreateModalDialog}" reRender="accountCreate,nameSearch,LetterDetailsPanel" value="Create Observer" rendered="{!(case.Origin != 'Webform Assembly v1.0')}"/>                            
+                        <apex:commandButton style="margin-left:37%" immediate="true" action="{!showCreateModalDialog}" reRender="accountCreate,nameSearch,LetterDetailsPanel" value="Create Observer" rendered="{!(case.Origin = 'Webform Assembly v1.0' && NOT(case.BypassSearchProcess__c))}"/>
+                        <c:Modal_Dialog id="accountCreate" visible="{!createModalStatus}">
+                            <c:CDCreateObserverComponent caseReference="{!case}" sourcePage="fromCreditDispute" />
+                            <div style="text-align:center">
+                                <apex:commandButton immediate="true" action="{!hideCreateModalDialog}" reRender="accountCreate,nameSearch,renderAccountDetails,clientSearchNo,selectClientInfo, LetterDetailsPanel" value="Return To Case"/>          
+                            </div>
+                            <br/>                   
+                        </c:Modal_Dialog>                                                 
+                    </apex:pageblockSection> -->
+                    
+                    <apex:outputPanel id="ClientSectionAfterBypassingSearchClient" >
+                        <apex:outputPanel rendered="{!AND(assignArrangement.byPassSearchProcess, case.Is_this_a_Client__c='Yes', case.Type!='Validation',case.origin != 'Webform Assembly v1.0')}">                      
+                            <apex:pageBlockSection >                         
+                                <apex:pageBlockSectionItem >    
+                                    <apex:outputlabel value="Bypass Client Search"/> 
+                                    <apex:actionRegion > 
+                                        <apex:inputCheckbox value="{!case.BypassSearchProcess__c}" >
+                                            <apex:actionSupport action="{!nullifyFieldsForBypassingSearchProcess}" event="onclick" rerender="ClientInfoPanel1,FieldsOnBypassingSearchProcess,nameSearch,CEOLineIndicator"  status="selectAccountStatus"/>
+                                            <!-- <apex:actionSupport action="{!nullifyFieldsForBypassingSearchProcess}" event="onclick" rerender="FieldsOnBypassingSearchProcess,nameSearch"  status="selectAccountStatus"/> <!-- 30/05/2017 -->
+                                        </apex:inputCheckbox> 
+                                    </apex:actionRegion> 
+                                </apex:pageblocksectionitem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel rendered="{!AND(case.Type!='Validation',case.origin = 'Webform Assembly v1.0')}">                      
+                            <apex:pageBlockSection >                         
+                                <apex:pageBlockSectionItem >    
+                                    <apex:outputlabel value="Bypass Client Search"/> 
+                                    <apex:actionRegion > 
+                                        <apex:inputCheckbox value="{!case.BypassSearchProcess__c}" >
+                                            <apex:actionSupport event="onclick" rerender="ClientInfoPanel1,FieldsOnBypassingSearchProcess,nameSearch,CEOLineIndicator"  status="selectAccountStatus"/>
+                                        </apex:inputCheckbox> 
+                                    </apex:actionRegion> 
+                                </apex:pageblocksectionitem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="nameSearch" >
+                    <apex:outputPanel id="clientSearchYes" >
+                        <!-- Mohan Changes for US1610716 -->
+                        <apex:pageblockSection columns="2" rendered="{!(NOT(case.BypassSearchProcess__c) && (case.CIN__c==null || case.CIF__c==null ) && (case.Type='QWR' || case.Type='Dispute' || case.Type = 'Deposit Dispute') && (case.Call_Source__c='eOscar(Non Fraud)' || case.Call_Source__c='eOscar(Fraud)'))}" > 
+                            <apex:pageBlockSectionItem rendered="{!case.Client_Name__c=null && case.First_Name__c!=null && case.Is_this_a_Client__c='Yes'}">
+                                <apex:outputLabel value="First Name"/>
+                                <apex:actionRegion >                                                                                                    
+                                    <apex:commandLink status="selectAccountStatus" value="{!case.First_Name__c}" action="{!redirectToAccount}" immediate="true" target="_blank"/>                                                                                   
+                                </apex:actionRegion>
+                            </apex:pageBlockSectionItem>
+                            <!--<apex:outputField rendered="{!case.Client_Name__c=null && case.First_Name__c!=null && case.Is_this_a_Client__c='Yes'}" value="{!case.First_Name__c}"/>--> 
+                            <apex:outputField rendered="{!case.Client_Name__c=null && case.Last_Name__c!=null && case.Is_this_a_Client__c='Yes'}" value="{!case.Last_Name__c}"/>
+                            <apex:pageBlockSectionItem rendered="{!case.Account_Number__c!=Null && case.Is_this_a_Client__c='Yes' && stProductId!=null && stProductId!=''}">
+                                <apex:outputLabel value="Account Number"/>
+                                <apex:actionRegion >                                                                                                    
+                                    <apex:commandLink status="selectAccountStatus" value="{!case.Account_Number__c}" action="{!redirectToSTProduct}" immediate="true" target="_blank"/>                                                                                   
+                                </apex:actionRegion>
+                            </apex:pageBlockSectionItem>
+                            <apex:outputField rendered="{!AND(case.Account_Number__c!=Null,case.Is_this_a_Client__c='Yes',OR(stProductId=null,stProductId=''))}" value="{!case.Account_Number__c}"/>
+                            <apex:outputField rendered="{!AND(case.Account_Number__c!=Null,case.Is_this_a_Client__c='Yes')}" value="{!case.Account_Type__c}"/>
+                            <apex:outputField rendered="{!case.TIN__c!=null}" value="{!case.TIN__c}"/>                   
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageblockSection columns="2" rendered="{!(NOT(case.BypassSearchProcess__c) && case.Type != 'MSP Task' && case.Type!='Validation')}" > 
+                            <apex:pageBlockSectionItem rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='No'}">
+                                <apex:outputLabel value="First Name"/>
+                                <apex:actionRegion >                                                                                                    
+                                    <apex:commandLink status="selectAccountStatus" value="{!case.First_Name__c}" action="{!redirectToAccount}" immediate="true" target="_blank"/>                                                                                   
+                                </apex:actionRegion>
+                            </apex:pageBlockSectionItem>
+                            <!--<apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='No'}" value="{!case.First_Name__c}"/>--> 
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='No'}" value="{!case.Last_Name__c}"/>
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='No'}" value="{!case.TIN__c}"/>                   
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='No'}" value="{!case.Street_Address__c }"/> 
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='No'}" value="{!case.City__c }"/> 
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='No'}" value="{!case.State__c }"/>
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='No'}" value="{!case.Zip__c }"/>
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='No'}" value="{!case.Address_Validated__c  }"/>
+                            <!--<apex:outputField rendered="{!case.Client_Name__c<>null}" value="{!case.CIN__c }"/>     case.BypassSearchProcess__c=true  --> 
+                            <!--apex:outputField rendered="{!case.Client_Name__c<>null && case.CIF__c != null }" value="{!case.CIF__c }"/-->   
+                        </apex:pageBlockSection>                             
+                    </apex:outputPanel> <!-- Client serach Yes ends    --> 
+                    
+                    <apex:outputPanel id="clientSearchNo" >                
+                        <apex:pageblockSection columns="2" rendered="{!(NOT(case.BypassSearchProcess__c) && case.Type != 'MSP Task' && case.Type!='Validation')}" > 
+                            <apex:pageBlockSectionItem rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes'}">
+                                <apex:outputLabel value="First Name"/>
+                                <apex:actionRegion >                                                                                                    
+                                    <apex:commandLink status="selectAccountStatus" value="{!case.First_Name__c}" action="{!redirectToAccount}" immediate="true" target="_blank"/>                                                                                   
+                                </apex:actionRegion>
+                            </apex:pageBlockSectionItem>
+                            <!--<apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes'}" value="{!case.First_Name__c}"/>--> 
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes'}" value="{!case.Last_Name__c}"/>                         
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes'}" value="{!case.Business_or_Personal__c}"/>                    
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes'}" value="{!case.Street_Address__c }"/> 
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes'}" value="{!case.City__c }"/> 
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes'}" value="{!case.State__c }"/>
+                            <apex:outputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes'}" value="{!case.Zip__c }"/>
+                            <apex:inputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes'}" value="{!case.Address_Validated__c  }"/>
+                            <!-- Mohan Changes for US1610716 -->
+                            <apex:inputField rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes' && (case.Type == 'Dispute'|| case.Type == 'QWR' || case.Type =='Inquiry Removal Request' || case.Type == 'Deposit Dispute')}" value="{!case.TIN__c  }" required="true"/>                             
+                            <!--<br/><br/>-->
+                            <br/>
+                        </apex:pageBlockSection>
+                        <apex:outputPanel id="requiredSection">
+                            <apex:pageBlockSection >   
+                                <apex:pageblockSectionItem rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes' && case.Is_this_a_Client__c!=''}">
+                                    <apex:outputLabel value="Account #"/>
+                                    <apex:inputField value="{!case.Account_Number__c}"  required="{!!case.Account_Account_Type_Not_Provided__c}"/>
+                                </apex:pageblockSectionItem>
+                                <apex:pageblockSectionItem rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes' && case.Is_this_a_Client__c!=''}">    
+                                    <apex:outputLabel value="Account Type"/><!-- account type1-->
+                                    <apex:actionRegion >
+                                        <apex:inputfield value="{!case.Account_Type__c}"  required="{!!case.Account_Account_Type_Not_Provided__c}" >
+                                            <apex:actionsupport rerender="accountTypeDetail1,ApplicationID,CEOLineIndicator,LetterDetailsPanel,letterSectionForInquiryRemoval,DisputeLOB" event="onchange" status="selectAccountStatus,LOBStatus" action="{!nullifyAccountTypeDetail}"/><!-- 29052017 change -->
+                                        </apex:inputField>
+                                    </apex:actionRegion> 
+                                </apex:pageblockSectionItem>
+                            </apex:pageBlockSection>    
+                            <!--MARCH 2023-->
+                            <apex:outputPanel id="ApplicationID">
+                                <apex:pageblockSection rendered="{!(case.Type == 'Internal Request' && case.Account_Account_Type_Not_Provided__c == false  && case.Account_Type__c =='Credit Card' && case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes' && case.Is_this_a_Client__c!='')}" >
+                                    <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>   
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputlabel value="Application ID" />
+                                        <apex:inputField value="{!case.Application_ID__c}" required="true" />
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageblockSection>
+                            </apex:outputPanel>   
+                            <!--MARCH 2023-->
+                            
+                            
+                            <!------------------------- Add Account Type Detail In Start 30/05/2017 ------------------------------->    
+                            <apex:outputPanel id="accountTypeDetail1">
+                                <apex:pageblockSection rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute' || case.Type = 'QWR' || case.Type = 'Inquiry Removal Request' || case.Type = 'Internal Request') && case.Account_Account_Type_Not_Provided__c = false  && case.Account_Type__c ='Consumer Loan' ) }" >
+                                    <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>   
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputlabel value="Account Type Detail" rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes' && case.Is_this_a_Client__c!=''}"/> <!-- account type detail1-->
+                                        <apex:actionRegion >                                                    
+                                            <apex:define name="requiredSelectAccount">
+                                                <div class="requiredInput">
+                                                    <div class="requiredBlock"></div>                     
+                                                    <apex:inputField value="{!case.Account_Type_Detail__c}"  rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes' && case.Is_this_a_Client__c!=''}" >                            
+                                                        <apex:actionsupport rerender="DisputeLOB,LetterDetailsPanel,letterSectionForInquiryRemoval" event="onchange" status="selectAccountStatus" action="{!nullfyDOFDPrincipal}"/>
+                                                    </apex:inputfield>
+                                                </div>
+                                            </apex:define>      
+                                        </apex:actionRegion>
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageblockSection>
+                                
+                                
+                                
+                            </apex:outputPanel>   
+                            <!------------------------- Add Account Type Detail In End 30/05/2017 ------------------------------->           
+                            
+                        </apex:outputPanel>  
+                        <apex:pageBlockSection id="observerAcctType">
+                            <apex:pageBlockSectionItem rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes' && (case.Call_Source__c ='Correspondence' && case.Origin ='Web')}">
+                                <apex:outputLabel value="Account#/Account Type Not Provided" />
+                                <apex:actionRegion >
+                                    <apex:outputfield value="{!case.Account_Account_Type_Not_Provided__c}" rendered="{!case.Client_Name__c<>null && case.Is_this_a_Client__c!='Yes'}">
+                                        <apex:actionSupport event="onclick" reRender="requiredSection" status="selectAccountStatus"/>
+                                    </apex:outputfield>
+                                </apex:actionRegion>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                        
+                        
+                        <!--<apex:outputField rendered="{!case.Client_Name__c<>null}" value="{!case.CIN__c }"/>     case.BypassSearchProcess__c=true    -->
+                    </apex:outputPanel>   <!-- Client serach NO ends.  -->   
+                    
+                    <apex:outputPanel id="selectClientInfo" >
+                        <apex:pageBlockSection rendered="{! case.Is_this_a_Client__c='Yes' && (case.CIN__c!=Null || case.CIF__c!=Null) && (NOT(case.BypassSearchProcess__c)) && (!comingAfterCreatingClient) && case.Type != 'MSP Task' && case.Type!='Validation' && !assignArrangement.assignSelectAcctDisplayNotAsReqd }"> 
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Select Account" rendered="{!(case.Is_this_a_Client__c='Yes' && (case.CIN__c!=Null || case.CIF__c!=Null) &&  !comingAfterCreatingClient)}"/>
+                                <apex:define name="requiredSelectAccount">
+                                    <!--<div class="requiredInput">
+<div class="requiredBlock"></div>-->
+                                    <apex:actionRegion > 
+                                        <apex:selectList size="1" value="{!selectedAccountInformation}" disabled="{!case.Account_Account_Type_Not_Provided__c = true}" rendered="{!(case.Is_this_a_Client__c='Yes' && !comingAfterCreatingClient  )}">
+                                            <apex:selectOptions value="{!accountsList}"/>
+                                            <apex:actionSupport event="onchange" action="{!storeSelectedAccountDetails}" reRender="LetterDetailsPanel,CEOLineIndicator,accountTypeDetail,accountTypeDetail3,selectAccountModal,renderAccountDetails,DisputeLOB" status="selectAccountStatus"/>
+                                        </apex:selectList>                                               
+                                    </apex:actionRegion>
+                                    <!-- </div>-->
+                                </apex:define>
+                            </apex:pageBlockSectionItem>
+                            <br/>
+                            <apex:inputField value="{!case.CID_Number__c}" rendered="{!case.Type = 'Deposit Dispute'}" required="true"/>
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Account#/Account Type Not Provided"></apex:outputLabel>
+                                <apex:actionRegion >
+                                <apex:inputField value="{!case.Account_Account_Type_Not_Provided__c}">
+                                    <apex:actionSupport event="onchange" action="{!resetAccountAndAccountType}" reRender="selectClientInfo,LetterDetailsPanel, accountTypeDetail,accountTypeDetail3,selectAccountModal,renderAccountDetails" status="selectAccountStatus"/>                     
+                                </apex:inputField>
+                                </apex:actionRegion>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageblockSection>
+                        
+                        <apex:pageBlockSection rendered="{! case.Is_this_a_Client__c='Yes' && case.First_Name__c != Null && (case.CIN__c!=Null || case.CIF__c!=Null) && (NOT(case.BypassSearchProcess__c)) && (!comingAfterCreatingClient) &&  !assignArrangement.assignSelectAcctDisplayAsReqd && assignArrangement.assignSelectAcctDisplayNotAsReqd  }"> 
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Select Account" rendered="{!(case.Is_this_a_Client__c='Yes' && (case.CIN__c!=Null || case.CIF__c!=Null) &&  !comingAfterCreatingClient) }"/>
+                                <apex:actionRegion >
+                                    <apex:selectList size="1"  value="{!selectedAccountInformation}" rendered="{!(case.Is_this_a_Client__c='Yes' && !comingAfterCreatingClient  )}">
+                                        <apex:selectOptions value="{!accountsList}"/>
+                                        <apex:actionSupport event="onchange" reRender="LetterDetailsPanel,CEOLineIndicator, selectAccountModal, renderAccountDetails, accountTypeDetail3,accountTypeDetail,DisputeLOB" action="{!storeSelectedAccountDetails}" status="selectAccountStatus"/>
+                                    </apex:selectList>                                               
+                                </apex:actionRegion>
+                            </apex:pageBlockSectionItem>
+                            <br/>
+                            <apex:inputField value="{!case.CID_Number__c}" rendered="{!case.Type = 'Deposit Dispute'}" required="true"/>
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Account#/Account Type Not Provided"></apex:outputLabel>
+                                <!--apex:actionRegion-->
+                                <apex:inputField value="{!case.Account_Account_Type_Not_Provided__c}">
+                                    <!--apex:actionSupport event="onchange" reRender="selectClientInfo" status="selectAccountStatus"/>   
+                                -->
+                                </apex:inputField>
+                                <!--/apex:actionRegion-->
+                            </apex:pageBlockSectionItem>
+                        </apex:pageblockSection>
+                        
+                        <c:Modal_Dialog id="selectAccountModal" visible="{!assignArrangement.assignIsAccountModalOpen}" width="35%" left="35%" height="85%">
+                            <c:SelectAccountComponent caseReference="{!case}" modalStatus="{!assignArrangement}"/>
+                            <br/>
+                        </c:Modal_Dialog>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!(NOT(case.BypassSearchProcess__c)) && case.Type != 'MSP Task' && case.Type!='Validation'}" id="renderAccountDetails" > 
+                        <apex:pageblockSection rendered="{!NOT(case.BypassSearchProcess__c)}" columns="2">
+                            <apex:pageBlockSectionItem rendered="{!selectedAccountInformation!='Other' && case.Account_Number__c!=Null && case.Is_this_a_Client__c='Yes' && !comingAfterCreatingClient && case.Client_Name__c!=null && stProductId!=null && stProductId!=''}">
+                                <apex:outputLabel value="Account Number"/>
+                                <apex:actionRegion >                                                                                                    
+                                    <apex:commandLink status="selectAccountStatus" value="{!case.Account_Number__c}" action="{!redirectToSTProduct}" immediate="true" target="_blank"/>                                                                                   
+                                </apex:actionRegion>
+                            </apex:pageBlockSectionItem>                 
+                            <apex:outputField rendered="{!AND(selectedAccountInformation!='Other',case.Account_Number__c!=Null,case.Is_this_a_Client__c='Yes',!comingAfterCreatingClient,case.Client_Name__c!=null,OR(stProductId=null,stProductId=''))}" value="{!case.Account_Number__c}"/>
+                            <apex:outputField rendered="{!AND(selectedAccountInformation!='Other',case.Account_Number__c!=Null,case.Is_this_a_Client__c='Yes',!comingAfterCreatingClient,case.Client_Name__c!=null)}" value="{!case.Account_Type__c}"/>
+                            <!--MARCH 2023-->
+                                
+                                    <apex:pageBlockSectionItem rendered="{!AND(selectedAccountInformation!='Other',case.Account_Number__c!=Null,case.Is_this_a_Client__c='Yes',!comingAfterCreatingClient,case.Client_Name__c!=null,case.Type=='Internal Request',(rendershowApplicationID=true || case.Account_Type__c == 'Credit Card'))}"></apex:pageBlockSectionItem>   
+                                    <apex:pageBlockSectionItem rendered="{!AND(selectedAccountInformation!='Other',case.Account_Number__c!=Null,case.Is_this_a_Client__c='Yes',!comingAfterCreatingClient,case.Client_Name__c!=null,case.Type=='Internal Request',(rendershowApplicationID=true || case.Account_Type__c == 'Credit Card'))}">
+                                        <apex:outputlabel value="Application ID" />
+                                        <apex:inputField value="{!case.Application_ID__c}" required="true" />
+                                    </apex:pageBlockSectionItem>
+                                
+                            <!--MARCH 2023-->
+                            <apex:pageBlockSectionItem rendered="{!AND(selectedAccountInformation!='Other',case.Account_Number__c!=Null,case.Is_this_a_Client__c='Yes',!comingAfterCreatingClient,case.Client_Name__c!=null)}"></apex:pageBlockSectionItem> 
+                            <!-- Mohan Changes US1610716   -->
+                            <apex:pageBlockSectionItem rendered="{!AND(selectedAccountInformation!='Other',case.Account_Number__c!=Null,case.Is_this_a_Client__c='Yes',!comingAfterCreatingClient,case.Client_Name__c!=null,case.Account_Type__c = 'Consumer Loan',(case.Type = 'Dispute' || case.Type = 'Deposit Dispute' || case.Type = 'QWR' || case.Type = 'Inquiry Removal Request' || case.Type = 'Internal Request'), case.Account_Account_Type_Not_Provided__c = false )}">
+                                <apex:outputlabel value="Account Type Detail" />
+                                <apex:actionRegion >
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <apex:selectList size="1" value="{!case.Account_Type_Detail__c}" >
+                                                <apex:selectOptions value="{!acctTypeDetailForCDValue}"/>
+                                                <apex:actionsupport rerender="DisputeLOB,LetterDetailsPanel,letterSectionForInquiryRemoval" event="onchange" status="selectAccountStatus" action="{!nullfyDOFDPrincipal}"/>
+                                            </apex:selectList>
+                                        </div> 
+                                    </apex:define>
+                                </apex:actionRegion> 
+                            </apex:pageBlockSectionItem>
+                            
+                        </apex:pageblockSection> 
+                        
+                        <apex:pageBlockSection id="searchClientAcct">
+                            <apex:pageblocksectionItem rendered="{!NOT(case.BypassSearchProcess__c) && case.Client_Name__c <> null && selectedAccountInformation ='Other'}">
+                                <apex:outputlabel value="Account #" rendered="{!( renderAccountType  && case.Is_this_a_Client__c='Yes')}"/>
+                                <apex:inputField required="{!!case.Account_Account_Type_Not_Provided__c}" rendered="{!( renderAccountType  && case.Is_this_a_Client__c='Yes' && selectedAccountInformation ='Other')}" value="{!case.Account_Number__c}" />
+                            </apex:pageblocksectionitem>
+                            <apex:pageblocksectionItem rendered="{!NOT(case.BypassSearchProcess__c)}"> 
+                                <apex:outputlabel value="Account Type" rendered="{!( renderAccountType  && case.Is_this_a_Client__c="Yes" && case.Client_Name__c <> null && selectedAccountInformation ='Other')}"/><!-- account type2-->
+                                <apex:actionRegion >
+                                    <apex:inputField required="{!!case.Account_Account_Type_Not_Provided__c}" rendered="{!(( renderAccountType  && case.Is_this_a_Client__c='Yes' ) && (case.Client_Name__c != null) && (selectedAccountInformation ='Other'))}" value="{!case.Account_Type__c}" >                            
+                                        <apex:actionsupport rerender="LetterDetailsPanel,letterSectionForInquiryRemoval,accountTypeDetail,ApplicationID2,CEOLineIndicator,DisputeLOB" event="onchange" status="selectAccountStatus" action="{!nullifyAccountTypeDetail}"/> <!-- 31/05/2017 -->
+                                    </apex:inputField>
+                                </apex:actionRegion>        
+                            </apex:pageblocksectionitem>
+                        </apex:pageBlockSection>
+                        
+                        <!--MARCH 2023-->
+                        <apex:outputPanel id="ApplicationID2">
+                                <apex:pageblockSection rendered="{!AND( renderAccountType,case.Is_this_a_Client__c='Yes',case.Client_Name__c != null,selectedAccountInformation ='Other',case.Account_Type__c=='Credit Card',case.Type=='Internal Request')}">
+                                    <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>   
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputlabel value="Application ID" />
+                                        <apex:inputField value="{!case.Application_ID__c}" required="true" />
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageblockSection>
+                        </apex:outputPanel>
+                            <!--MARCH 2023-->
+                        <!--Nitesh CD Changes 2017    ---->
+                        
+                        <!------------------------- Add Account Type Detail Start 26/05/2017 ------------------------------->
+                        <apex:outputPanel id="accountTypeDetail">
+                            <apex:pageblocksection rendered="{!((case.Type = 'Dispute' || case.Type = 'QWR' || case.Type = 'Deposit Dispute' || case.Type = 'Inquiry Removal Request' || case.Type = 'Internal Request') && case.Account_Account_Type_Not_Provided__c = false   && case.Account_Type__c ='Consumer Loan') }">
+                                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>   
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputlabel value="Account Type Detail" rendered="{!(selectedAccountInformation = 'Other' && case.Account_Type__c ='Consumer Loan')}"   /><!--account type detail2-->
+                                    <apex:actionRegion >
+                                        <apex:define name="requiredSelectAccount">
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock"></div>
+                                                <apex:inputField value="{!case.Account_Type_Detail__c}"  rendered="{!(selectedAccountInformation = 'Other' && case.Account_Type__c ='Consumer Loan' )}" >                            
+                                                    <apex:actionsupport rerender="DisputeLOB,LetterDetailsPanel,letterSectionForInquiryRemoval" event="onchange" status="selectAccountStatus" action="{!nullfyDOFDPrincipal}"/>
+                                                </apex:inputfield>
+                                            </div>
+                                        </apex:define>     
+                                    </apex:actionRegion>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageblocksection>
+                        </apex:outputPanel>  
+                        
+                        <!------------------------- Add Account Type Detail End 26/05/2017--------------------------------> 
+                        
+                        <!--Nitesh CD Changes 2017    ----> 
+                        
+                        <apex:pageBlockSection id="searchAcctType">
+                            <apex:pageBlockSectionItem rendered="{!(( renderAccountType  && case.Is_this_a_Client__c='Yes' ) && (case.Origin='Web' && case.Call_Source__c = 'Correspondence')  )}">
+                                <apex:outputLabel value="Account#/Account Type Not Provided" />
+                                <apex:actionRegion >
+                                    <apex:outputField value="{!case.Account_Account_Type_Not_Provided__c}" rendered="{!(( renderAccountType  && case.Is_this_a_Client__c='Yes' ) && (case.Origin='Web' && case.Call_Source__c = 'Correspondence') )}">
+                                        <apex:actionSupport event="onclick" reRender="searchClientAcct" status="selectAccountStatus"/>
+                                    </apex:outputField>
+                                </apex:actionRegion>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>                        
+                    </apex:outPutPanel>  
+                    
+                    
+                    <apex:outputPanel id="FieldsOnBypassingSearchProcess"  >
+                        <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                        <apex:outPutPanel rendered="{!((case.BypassSearchProcess__c) || (case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist')))}">                      
+                            <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                            <apex:pageBlockSection columns="1" rendered="{! case.Type != 'MSP Task' && case.Type!='Validation' && NOT(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}">                              
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputlabel value="Reason for Bypass Search?"/>
+                                    <apex:actionRegion >
+                                        <apex:inputField value="{!case.Reason_for_Overriding_Search_Process__c}" required="true">
+                                            <apex:actionSupport event="onchange" rerender="CINField"  status="selectAccountStatus"/>
+                                        </apex:inputField>
+                                    </apex:actionRegion>
+                                </apex:pageBlockSectionItem>                             
+                            </apex:pageBlockSection>  
+                            
+                            
+                            <apex:pageBlockSection columns="2" rendered="{! case.Type != 'MSP Task' && case.Type!='Validation'}"> 
+                                
+                                <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                                <apex:inputField value="{!case.First_Name__c}" required="{! NOT(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}"/>
+                                <apex:inputField value="{!case.Last_Name__c}" required="{! NOT(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}"/>
+                                
+                                <apex:inputField value="{!case.Street_Address__c }" required="{! NOT(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}"/>
+                                
+                                <apex:inputField value="{!case.City__c }" required="{! NOT(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}"/>
+                                <apex:pageBlockSectionItem > <!--//Added instead of apex:inputField for State__c as Property State Code needs to be rerender on the basis of this field.-->
+                                    <apex:outputLabel value="State"/>
+                                    <apex:actionRegion >
+                                        <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                                        <apex:inputField value="{!case.State__c }" required="{! NOT(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}">
+                                            <apex:actionSupport event="onChange" rerender="LetterDetailsPanel"/>
+                                        </apex:inputField>
+                                    </apex:actionRegion>
+                                </apex:pageBlockSectionItem>
+                                <apex:outputField value="{!case.State__c }"/>
+                                <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                                <apex:inputField value="{!case.Zip__c }" required="{! NOT(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}"/>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Phone Number"/>
+                                    <!--Changes start for JUNE 2022>
+                                    <apex:inputField value="{!case.Client_Contact_Number__c}" required="{! NOT(case.Is_this_a_Client__c='No' && case.Client_Indicator__c='hBBT')}"/-->
+                                    <apex:inputField value="{!case.Client_Contact_Number__c}"/>
+                                     <!--Changes start for JUNE 2022-->
+                                </apex:pageBlockSectionItem>
+                                <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                                <apex:inputField value="{!case.TIN__c}" required="{! NOT(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}"/>
+                                <apex:inputField value="{!case.Address_Validated__c }"/>
+                            </apex:pageBlockSection>
+                            <apex:actionRegion >
+                                <apex:pageBlockSection id="byPassAcct">
+                                    
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputlabel value="Account #"/>
+                                        
+                                        <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                                        <apex:inputField value="{!case.Account_Number__c}" required="{! (!case.Account_Account_Type_Not_Provided__c) && NOT(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}"/>
+                                    </apex:pageBlockSectionItem>
+                                    <br/>
+                                <!-- Mohan Changes as part of US1610720 -->
+                                
+                                <apex:inputField value="{!case.CID_Number__c}" rendered="{!case.Type = 'Deposit Dispute'}" required="true"/>
+                                
+                                    
+                                    <apex:pageBlockSectionItem >
+                                        <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                                        <apex:outputlabel value="Account Type" rendered="{!((case.BypassSearchProcess__c) || (case.Is_this_a_Client__c='No' &&(case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist')))}" /><!-- account type3-->
+                                        <apex:actionRegion >
+                                            <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                                            <apex:inputField value="{!case.Account_Type__c}" rendered="{!((case.BypassSearchProcess__c) || (case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist')))}" required="{! (!case.Account_Account_Type_Not_Provided__c) && NOT(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}">
+                                                <apex:actionSupport event="onchange" reRender="accountTypeDetail3,ApplicationID3,CEOLineIndicator,LetterDetailsPanel,letterSectionForInquiryRemoval,DisputeLOB" status="selectAccountStatus" action="{!nullifyAccountTypeDetail}" />
+                                            </apex:inputField>
+                                        </apex:actionRegion>
+                                    </apex:pageBlockSectionItem> 
+                                </apex:pageBlockSection> 
+                                
+                                <!--MARCH 2023-->
+                        <apex:outputPanel id="ApplicationID3">
+                            <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                            <apex:pageblockSection rendered="{!(((case.BypassSearchProcess__c) || (case.Is_this_a_Client__c='No' &&(case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))) && case.Account_Type__c=='Credit Card' && case.Type=='Internal Request')}">
+                                    <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>   
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputlabel value="Application ID" />
+                                        <apex:inputField value="{!case.Application_ID__c}" required="true" />
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageblockSection>
+                        </apex:outputPanel>
+                            <!--MARCH 2023-->
+                                
+                                <!------------------------- Add Account Type Detail In Start 29/07/2015 ------------------------------->    
+                                <apex:outputPanel id="accountTypeDetail3">
+                                    <apex:pageblockSection rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute' || case.Type = 'QWR' || case.Type = 'Inquiry Removal Request' || case.Type = 'Internal Request') && case.Account_Account_Type_Not_Provided__c = false  && case.Account_Type__c ='Consumer Loan' ) }">
+                                        <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>   
+                                        <apex:pageBlockSectionItem >
+                                            <apex:outputlabel value="Account Type Detail"   /> <!-- account type3 -->
+                                            <apex:actionRegion >
+                                                <apex:define name="requiredSelectAccount">
+                                                    <div class="requiredInput">
+                                                        <div class="requiredBlock"></div>                
+                                                        <apex:inputField value="{!case.Account_Type_Detail__c}"  >                            
+                                                            <apex:actionsupport rerender="LetterDetailsPanel,letterSectionForInquiryRemoval,DisputeLOB" event="onchange" status="selectAccountStatus" action="{!nullfyDOFDPrincipal}"/>
+                                                        </apex:inputfield>
+                                                    </div>
+                                                </apex:define>    
+                                            </apex:actionRegion>
+                                        </apex:pageBlockSectionItem>
+                                    </apex:pageblockSection> 
+                                    
+                                    
+                                </apex:outputPanel>
+                                <!------------------------- Add Account Type Detail In End 29/07/2015 ------------------------------->           
+                                
+                                
+                                
+                            </apex:actionRegion> 
+                            
+                            <apex:pageBlockSection id="byPassReqType" >
+                                <apex:pageBlockSectionItem rendered="{! case.Type != 'MSP Task' && case.Type!='Validation' && (case.Origin='Web' && case.Call_Source__c = 'Correspondence')}">
+                                    <apex:outputLabel value="Account#/Account Type Not Provided" />
+                                    <apex:actionRegion >
+                                        <apex:outputField value="{!case.Account_Account_Type_Not_Provided__c}" >   
+                                            <apex:actionSupport event="onclick" reRender="byPassAcct" status="selectAccountStatus"/>
+                                        </apex:outputField>
+                                    </apex:actionRegion>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageblocksection>
+                            
+                            
+                            
+                            <apex:pageBlockSection id="CINField" columns="1" rendered="{! case.Type != 'MSP Task' && case.Type!='Validation'}">   
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputlabel value="CIN" rendered="{!case.Reason_for_Overriding_Search_Process__c='System Not Available' }"/>      
+                                    <apex:inputField value="{!case.CIN__c}" rendered="{!case.Reason_for_Overriding_Search_Process__c='System Not Available' }"/>
+                                </apex:pageBlockSectionItem>
+                                <!--Poorva-->
+                                <apex:pageBlockSectionItem >
+                                    <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                                    <apex:outputlabel value="CIF" rendered="{!(case.Reason_for_Overriding_Search_Process__c='hBBT Client' || case.Reason_for_Overriding_Search_Process__c='hBBT Client Not in Client 360') || (case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}"/>      
+                                    <apex:inputField value="{!case.CIF__c}" rendered="{!(case.Reason_for_Overriding_Search_Process__c='hBBT Client' || case.Reason_for_Overriding_Search_Process__c='hBBT Client Not in Client 360') || (case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}"/>
+                                </apex:pageBlockSectionItem>
+                                <!--Poorva-->
+                                <!--<apex:pageBlockSectionItem >
+<apex:outputlabel value="CIN" rendered="{!case.Reason_for_Overriding_Search_Process__c='System Not Available' && case.CIN__c!=Null}"/>      
+<apex:outputField value="{!case.CIN__c}" rendered="{!case.Reason_for_Overriding_Search_Process__c='System Not Available' && case.CIN__c!=Null}"/>                              
+</apex:pageBlockSectionItem> -->
+                            </apex:pageBlockSection>                        
+                            
+                            
+                            <!-- August 2024 - US1339854 - CD.21 - Create an Observer EDIT -->
+                            <apex:pageBlockSection rendered="{! !(case.Is_this_a_Client__c='No' && (case.Client_Indicator__c='hBBT' || case.Client_Indicator__c='hST' || case.Client_Indicator__c='Truist'))}"> 
+                                <apex:inputField value="{!case.Agency_Name__c}" required="false"/>
+                            </apex:pageBlockSection>     
+                        </apex:outPutPanel>
+                    </apex:outPutPanel>
+                    
+                    
+                    
+                    <apex:outputPanel >
+                        <apex:actionStatus id="selectAccountStatus">
+                            <apex:facet name="start">
+                                <div style="text-align:center">
+                                    <img src="{!$Resource.SpinIcon}"/>
+                                </div>
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputPanel>  
+                </apex:outputPanel> <!-- End of 'nameSearch'-->
+                <!--   
+<apex:outputPanel id="ClientInfoPanel" > 
+<apex:outputPanel >           
+<apex:pageBlockSection id="ClientInfoSection1" title="Client Information" columns="2" rendered="{!case.Type='Internal Request'}"> 
+<apex:inputField value="{!case.Client_Indicator__c}" required="true" /> <br/>
+<apex:pageBlockSectionItem >
+<apex:outputLabel value="First Name"/>
+<apex:inputField value="{!case.First_Name__c}" required="true"/>
+</apex:pageBlockSectionItem>
+
+<apex:pageBlockSectionItem >
+<apex:outputLabel value="Last Name"/>
+<apex:inputField value="{!case.Last_Name__c}" required="true"/>
+</apex:pageBlockSectionItem>
+
+<apex:pageBlockSectionItem >
+<apex:outputLabel value="Account #"/>
+<apex:inputField value="{!case.Account_Number__c}" required="true"/>
+</apex:pageBlockSectionItem>
+
+<apex:pageBlockSectionItem >
+<apex:outputLabel value="Account Type"/>
+<apex:actionRegion >
+<apex:inputField value="{!case.Account_Type__c}" required="true">
+<apex:actionsupport event="onchange" rerender="internalRequestDetail" />
+</apex:inputfield>
+</apex:actionRegion>
+</apex:pageBlockSectionItem>
+
+<apex:pageBlockSectionItem rendered="{!case.Type='Internal Request'}">
+<apex:outputLabel value="TIN"/>
+<apex:inputField value="{!case.TIN__c}"/>
+</apex:pageBlockSectionItem>
+</apex:pageBlockSection>
+</apex:outputPanel>           
+</apex:outputPanel>
+
+<apex:outputPanel id="internalRequestDetail">
+<apex:pageBlockSection >
+<apex:pageBlockSectionitem />
+<apex:pageBlockSectionitem rendered="{!case.Type='Internal Request' && case.Account_Type__c='Consumer Loan'}">
+<apex:outputlabel value="Account Type Detail"  /> 
+
+<apex:inputField value="{!case.Account_Type_Detail__c}" required="true"/>                            
+</apex:pageBlockSectionitem>
+</apex:pageBlockSection>  
+</apex:outputPanel>  
+-->
+                <apex:outputPanel id="ClientInfoPanelForMSPTask">  <!--Added for Case Type=MSP Task-->
+                    <apex:outputPanel >           
+                        <apex:pageBlockSection id="ClientInfoSection2" title="Client Information" columns="2" rendered="{!case.Type='MSP Task'}">
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Account #"/>
+                                <apex:inputField value="{!case.Account_Number__c}" required="{!case.Status='Closed'}"/>
+                            </apex:pageBlockSectionItem>
+                            <!-- April 2024 changes to set dispute lob for accont type-->
+                            <!--apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Account Type"/>
+                                <apex:inputField value="{!case.Account_Type__c}"/>
+                            </apex:pageBlockSectionItem-->
+                            
+                            <apex:pageblockSectionItem >    
+                                    <apex:outputLabel value="Account Type"/>
+                                    <apex:actionRegion >
+                                        <apex:inputfield value="{!case.Account_Type__c}" >
+                                            <apex:actionsupport rerender="DisputeLOB" event="onchange" status="" action="{!nullifyAccountTypeDetail}"/>
+                                        </apex:inputField>
+                                    </apex:actionRegion> 
+                                </apex:pageblockSectionItem>
+                            <!-- April 2024 changes to set dispute lob for accont type-->
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                </apex:outputPanel>    
+                
+                <!--apex:pageBlockSection >
+<apex:inputField value="{!case.Dispute_LOB__c}" required="true"/>   
+</apex:pageBlockSection-->
+                
+                
+                <!--apex:outputLabel value="Dispute LOB"/-->
+                
+                
+                
+            </apex:outputPanel> <!-- End of 'mainPanel'  -->    
+            <apex:outputPanel id="DisputeLOB">
+                <apex:pageBlockSection >
+                    <apex:pageBlockSectionItem >
+                        <apex:outputlabel value="Dispute LOB"/>
+                        <apex:actionregion >
+                        <apex:define name="requiredDisputeLOB"> 
+                            <div class="requiredInput">
+                                <div class="requiredBlock" style="background-color:C00"></div>                                            
+                                <apex:inputField value="{!case.Dispute_LOB__c}">
+                                    <apex:actionsupport event="onchange" action="{!handleDisputeLOB}" rerender="CaseClosurePanel,LetterDetailsPanel" status="InqRemovalStatus"/>
+                                </apex:inputField>
+                            </div>
+                        </apex:define>
+                        </apex:actionregion>
+                    </apex:pageBlockSectionItem> 
+                </apex:pageBlockSection> 
+                </apex:outputPanel>
+                
+                <!--MARCH 2023-->
+                            <apex:outputPanel id="CEOLineIndicator">
+                                <apex:pageblockSection rendered="{!(case.Type == 'Internal Request' && (case.Account_Type__c =='Credit Card' || rendershowApplicationID=true))}" >
+                                      
+                                    <apex:pageBlockSectionItem >
+                                        <apex:outputlabel value="CEO Chairman line indicator" />
+                                        <apex:inputField value="{!case.CEO_Chairman_line_indicator__c}"/>
+                                    </apex:pageBlockSectionItem>
+                                </apex:pageblockSection>
+                            </apex:outputPanel>   
+                            <!--MARCH 2023-->
+            
+            
+            
+            <!-- *****************************Letter Details**************************    -->
+            <apex:actionRegion >
+                
+                <!-- Start Changes for the rendering conditions for the CD bug Fix 2015 -->
+                
+                <apex:outputPanel id="LetterDetailsPanel">
+                    <!-- Mohan Changes for US1610716  -->
+                    <apex:outputPanel rendered="{!(( case.Type == 'QWR' || case.Type == 'Dispute' || case.Type == 'Deposit Dispute') && case.Call_Source__c!='eOscar(Non Fraud)' && case.Call_Source__c!='eOscar(Fraud)')}" >
+                        
+                        <apex:pageBlockSection id="LetterSection" title="Letter Details"  columns="2">     <!--Added for Case Type=MSP Task-->
+                            
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="NC Property State"/>                            
+                                <apex:actionRegion >
+                                    <!-- August 2024 - US1328358 - CD.01 - NC Property State Alignment with Letters Code 
+                                    <apex:inputField value="{!case.NC_Property_State__c}" rendered="{! (case.Type == 'QWR' || case.Type == 'Dispute') && case.Call_Source__c!='eOscar(Non Fraud)' && case.Call_Source__c!='eOscar(Fraud)'}"> -->
+                                    <!-- Mohan Changes US1610716 -->
+                                    <apex:inputField value="{!case.NC_Property_State__c}" rendered="{! (case.Type == 'QWR' || case.Type == 'Dispute' || case.Type == 'Deposit Dispute') && case.Call_Source__c!='eOscar(Non Fraud)' && case.Call_Source__c!='eOscar(Fraud)' && (case.Letters__c != 'CB105 - CBD NC Update' && case.Letters__c != 'CB106 - CBD NC Denial')}">    
+                                        <apex:actionSupport event="onchange" action="{!nullifyLetterFields}" rerender="LetterDetailsPanel" status="LetterStatus" />                                      
+                                    </apex:inputField>
+                                    <!-- August 2024 - US1328358 - CD.01 - NC Property State Alignment with Letters Code -->
+                                     <!-- Mohan Changes US1610716 -->
+                                    <apex:outputfield value="{!case.NC_Property_State__c}" rendered="{! (case.Type == 'QWR' || case.Type == 'Dispute' || case.Type == 'Deposit Dispute') && case.Call_Source__c!='eOscar(Non Fraud)' && case.Call_Source__c!='eOscar(Fraud)' && (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial')}"/>
+                                </apex:actionRegion>
+                            </apex:pageBlockSectionItem>
+                            <!-- Code added for alignment of fields -->
+                            <apex:pageBlockSectionItem rendered="{!( case.Call_Source__c=='CARRT' || case.Call_Source__c=='MERT' || case.Call_Source__c=='CLEAR' || case.Call_Source__c=='CFS' || case.Call_Source__c=='Social Media' || case.Call_Source__c=='eOscar(Non Fraud)' || case.Call_Source__c=='eOscar(Fraud)' || case.Call_Source__c=='Legal' || case.Type == 'QWR' || case.Type == 'Inquiry Removal Request' )}"/ >
+                                
+                                <apex:pageBlockSectionItem rendered="{!( case.Call_Source__c!='CARRT' && case.Call_Source__c!='MERT' && case.Call_Source__c!='CLEAR' && case.Call_Source__c!='CFS' && case.Call_Source__c!='Social Media' && case.Call_Source__c!='eOscar(Non Fraud)' && case.Call_Source__c!='eOscar(Fraud)' && case.Call_Source__c!='Legal' && case.Type != 'QWR' && case.Type != 'Inquiry Removal Request' )}" >
+                                    <apex:outputLabel value="Letters" />                            
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF(AND(case.Status='Closed',Case.Call_Source__c!='Escalation Banking Operations',Case.Call_Source__c!='Escalation Mortgage'),'background-color:C00','background-color:transparent')}"></div> 
+                                            <!--apex:actionRegion-->
+                                            <apex:inputField value="{!case.Letters__c}" >
+                                                <apex:actionSupport event="onchange" action="{!assignStatusOnTheBasisOfLetter}" rerender="LetterSection,DealershipInformationPanel,DealershipSection,InquiryPanel,InquirySection,InquiryRemovalSection1,InquiryRemovalSection,CaseClosurePanel,CaseClosureSection,CaseClosureSection1,MissingIformationPanel,DOFDAndPrincipal,DOFD1,Principal1,CurrentLoanBalance1,PrincipalName1,SuspenseBalance1,PrincipalAddress1,EscrowBalance1,PrincipalAddress2" status="LetterStatus" />
+                                            </apex:inputField>   
+                                            <!--/apex:actionRegion-->
+                                        </div>
+                                    </apex:define>  
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem rendered="{!!case.NC_Property_State__c}"/>
+                                <apex:pageBlockSectionItem rendered="{! case.NC_Property_State__c}">
+                                    <apex:outputLabel value="Check if Account is Delinquent"/>
+                                    <apex:actionRegion >                                
+                                        <apex:inputField id="debtDeliquency" value="{!case.Debt_Delinquency__c}" >                                                                                         
+                                            <apex:actionSupport event="onchange" action="{!nullifyLetterFields}" rerender="LetterDetailsPanel,lastReportingDate" status="LetterStatus" />                                      
+                                        </apex:inputField>
+                                    </apex:actionRegion>
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem rendered="{! case.Letters__c == null || case.Letters__c == 'No Letter Needed' || case.Letters__c == 'CB101 - DealerNbr Inquiries'}"/>
+                                
+                                <apex:pageBlockSectionItem id="options" rendered="{!case.Letters__c != null && case.Letters__c != 'No Letter Needed' && case.Letters__c != 'CB101 - DealerNbr Inquiries'}">                             
+                                    <apex:outputLabel value="Options"   /> 
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" ></div> 
+                                            <!--apex:actionRegion -->
+                                            <apex:inputField value="{!case.Options__c}" >
+                                                <apex:actionSupport event="onchange" rerender="LetterSection,lastReportingDate" status="LetterStatus" />                                         
+                                            </apex:inputField>  
+                                            <!--/apex:actionRegion-->
+                                        </div>
+                                    </apex:define>                              
+                                </apex:pageBlockSectionItem>   
+                                <!-- <apex:inputField id="options" value="{!case.Options__c}" required="true" rendered="{!case.Letters__c != null && case.Letters__c != 'No Letter Needed' && case.Letters__c != 'CB101 - DealerNbr Inquiries'}" style="width:250px">
+<apex:actionSupport event="onchange" rerender="LetterSection,lastReportingDate" status="LetterStatus" />                                         
+</apex:inputField> -->          <apex:pageBlockSectionItem rendered="{! case.NC_Property_State__c && case.Dispute_LOB__c == 'Mortgage'}">
+                                    <apex:outputLabel value="Check if email request been sent to research and saved on case?"/>
+                                    <apex:actionRegion >                                
+                                        <apex:inputField value="{!case.Has_Been_Researched__c}" required="{!case.NC_Property_State__c && case.Dispute_LOB__c == 'Mortgage' && case.Status == 'Closed'}" />
+                                    </apex:actionRegion>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem rendered="{! case.NC_Property_State__c && case.Dispute_LOB__c == 'Mortgage'}"/>
+                                <apex:pageBlockSectionItem rendered="{! case.Debt_Delinquency__c == false}"/>
+                                <apex:inputField id="debtDeliquencyDate" value="{!case.Debt_Delinquency_Date__c}" rendered="{! case.Debt_Delinquency__c == true}"/>    
+                                
+                                <apex:pageBlockSectionItem rendered="{! case.Options__c == '104B - Duplicate Dispute'}"/>
+                                
+                                <apex:pageBlockSectionItem id="lastReportingDate" rendered="{!case.Options__c == '104B - Duplicate Dispute'}">
+                                    <apex:outputLabel value="Last Reporting Date"   /> 
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" ></div> 
+                                            <apex:inputField value="{!case.Last_Reporting_Date__c}" />                                                                        
+                                        </div>
+                                    </apex:define>                              
+                                </apex:pageBlockSectionItem>   
+                                
+                                <!-- <apex:inputField id="lastReportingDate" value="{!case.Last_Reporting_Date__c}" required="{! case.Options__c == '104B - Duplicate Dispute'}" rendered="{! case.Options__c == '104B - Duplicate Dispute'}"/>        -->
+                                
+                                <apex:pageBlockSectionItem id="Principal1"  > <!-- rendered = "{!(case.Letters__c = 'STM Denial Current' || case.Letters__c = 'STM Denial Delinquent' || case.Letters__c = 'STM Update Current' || case.Letters__c = 'STM Update Delinquent')}" -->  
+                                    <!-- Mohan Changes US1610716                          -->
+                                    <apex:outputLabel value="Principal" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && (case.Account_Type__c='Mortgage Loan' ) && ( case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial' ) && case.Account_Account_Type_Not_Provided__c = false  && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/>                            
+                                    <apex:define name="requiredSelectAccount"> 
+                                        <div class="requiredInput"  >
+                                            <div class="requiredBlock"></div>  
+                                            <!--apex:actionRegion-->
+                                            <!-- Mohan changes US1610716 -->
+                                            <apex:inputField value="{!case.Principal__c}" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && (case.Account_Type__c='Mortgage Loan' ) && (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false    && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }">
+                                                <apex:actionSupport event="onchange" action="{!nullifyOnPrincipal}" reRender="LetterDetailsPanel" status="LetterStatus" />
+                                            </apex:inputField>        
+                                            <!--/apex:actionRegion-->
+                                        </div>
+                                    </apex:define>                                                    
+                                </apex:pageBlockSectionItem>  
+                                
+                                <apex:pageBlockSectionItem id="CurrentLoanBalance1" > 
+                                    <!-- Mohan Changes US1610716 -->
+                                    <apex:outputLabel value="Current Loan Balance" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && (case.Account_Type__c='Mortgage Loan' || (case.Account_Type__c='Consumer Loan'  && (case.Account_Type_Detail__c ='Home Equity Line'  || case.Account_Type_Detail__c ='Home Equity Loan'))) && (case.Letters__c = 'CB105 - CBD NC Update' || case.Letters__c = 'CB106 - CBD NC Denial' ) && case.Account_Account_Type_Not_Provided__c = false    && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ))}" />
+                                    
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div> 
+                                            <!-- Mohan Changes US1610716                                      -->
+                                            <apex:inputField value="{!case.Current_Loan_Balance__c}"  rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && (case.Account_Type__c='Mortgage Loan' || (case.Account_Type__c='Consumer Loan'  && (case.Account_Type_Detail__c ='Home Equity Line'  || case.Account_Type_Detail__c ='Home Equity Loan'))) && (case.Letters__c = 'CB105 - CBD NC Update' || case.Letters__c = 'CB106 - CBD NC Denial' ) && case.Account_Account_Type_Not_Provided__c = false  && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ))}"/>
+                                        </div>
+                                    </apex:define>
+                                    
+                                </apex:pageBlockSectionItem>    
+                                
+                                <apex:pageBlockSectionItem id="PrincipalName1"> 
+                                    <!-- Mohan Changes US1610716                             -->
+                                    <apex:outputLabel value="Principal Name" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.Principal__c= 'Other' && (case.Account_Type__c='Mortgage Loan' ) && (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false  && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"    /> 
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" ></div> 
+                                            <!-- Mohan Changes US1610716 -->
+                                            <apex:inputField value="{!case.Principal_Name__c}"  rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.Principal__c= 'Other' && (case.Account_Type__c='Mortgage Loan' ) && (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false  && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"   />
+                                        </div>
+                                    </apex:define>                              
+                                </apex:pageBlockSectionItem>                        
+                                
+                                <!------------------------------ Letter Section Start 31/05/2017 " -------------------------------->       
+                                <apex:pageBlockSectionItem id="DOFD1" rendered="false">
+                                    <!-- Mohan Changes US1610716                              -->
+                                    <apex:outputLabel value="DOFD" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && 
+                                                                             ((case.Account_Type__c='Mortgage Loan' && (case.Letters__c = 'STM Denial Delinquent' || case.Letters__c = 'STM Update Delinquent')) || 
+                                                                             (case.Account_Type__c='Consumer Loan' && (case.Account_Type_Detail__c ='Home Equity Line' || case.Account_Type_Detail__c ='Home Equity Loan') && (case.Letters__c = 'STB Denial Delinquent' || case.Letters__c = 'STB Update Delinquent'))
+                                                                             ) && 
+                                                                             case.Account_Account_Type_Not_Provided__c = false  && 
+                                                                             (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/> 
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <!-- Mohan Changes US1610716  -->
+                                            <apex:inputField value="{!case.DOFD__c}"  rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && 
+                                                                                                ((case.Account_Type__c='Mortgage Loan' && (case.Letters__c = 'STM Denial Delinquent' || case.Letters__c = 'STM Update Delinquent')) || 
+                                                                                                (case.Account_Type__c='Consumer Loan' && (case.Account_Type_Detail__c ='Home Equity Line' || case.Account_Type_Detail__c ='Home Equity Loan') && (case.Letters__c = 'STB Denial Delinquent' || case.Letters__c = 'STB Update Delinquent'))
+                                                                                                ) && 
+                                                                                                case.Account_Account_Type_Not_Provided__c = false && 
+                                                                                                (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/>
+                                        </div>
+                                    </apex:define>                                   
+                                </apex:pageBlockSectionItem>
+                                
+                                
+                                
+                                
+                                
+                                
+                                <apex:pageBlockSectionItem id="SuspenseBalance1" >   <!-- rendered = "{!(case.Letters__c = 'STM Denial Current' || case.Letters__c = 'STM Denial Delinquent' || case.Letters__c = 'STM Update Current' || case.Letters__c = 'STM Update Delinquent')}" -->
+                                    <!-- Mohan Changes US1610716 -->
+                                    <apex:outputLabel value="Suspense Balance" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.Account_Type__c='Mortgage Loan'  && (case.Letters__c = 'CB105 - CBD NC Update' || case.Letters__c = 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/>
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div> 
+                                            <!-- Mohan Changes US1610716 -->
+                                            <apex:inputField value="{!case.Suspense_Balance__c}"   rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.Account_Type__c='Mortgage Loan' && (case.Letters__c = 'CB105 - CBD NC Update' || case.Letters__c = 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/>
+                                        </div>
+                                    </apex:define>  
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem id="PrincipalAddress1"> <!-- rendered = "{!(case.Letters__c = 'STM Denial Current' || case.Letters__c = 'STM Denial Delinquent' || case.Letters__c = 'STM Update Current' || case.Letters__c = 'STM Update Delinquent') && case.principal__c = 'Private' }" -->
+                                    <!-- Mohan Changes US1610716 -->
+                                    <apex:outputLabel value="Principal Address 1" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.principal__c = 'Other' &&(case.Account_Type__c='Mortgage Loan') && (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/>
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" ></div> 
+                                            <!-- Mohan Changes US1610716 -->
+                                            <apex:inputField value="{!case.Principal_Address_1__c}"  rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.Principal__c = 'Other' &&(case.Account_Type__c='Mortgage Loan' ) && (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ))}" />
+                                        </div>
+                                    </apex:define>    
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem id="EscrowBalance1" >  <!-- rendered = "{!(case.Letters__c = 'STM Denial Current' || case.Letters__c = 'STM Denial Delinquent' || case.Letters__c = 'STM Update Current' || case.Letters__c = 'STM Update Delinquent')}" -->
+                                    <!-- Mohan Changes US1610716 -->
+                                    <apex:outputLabel value="Escrow Balance" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.Account_Type__c='Mortgage Loan'  && (case.Letters__c = 'CB105 - CBD NC Update' || case.Letters__c = 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false  && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/>
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <!-- Mohan Changes US1610716 -->  
+                                            <apex:inputField value="{!case.Escrow_Balance__c}"  rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.Account_Type__c='Mortgage Loan'  && (case.Letters__c = 'CB105 - CBD NC Update' || case.Letters__c = 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false  && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/>
+                                        </div>
+                                    </apex:define>  
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem id="PrincipalAddress2"> <!-- rendered = "{!(case.Letters__c = 'STM Denial Current' || case.Letters__c = 'STM Denial Delinquent' || case.Letters__c = 'STM Update Current' || case.Letters__c = 'STM Update Delinquent') && case.principal__c = 'Private' }" -->
+                                    <!-- Mohan Changes US1610716 -->
+                                    <apex:outputLabel value="Principal Address 2" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.principal__c = 'Other' && (case.Account_Type__c='Mortgage Loan' ) && (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false   && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/>
+                                     <!-- Mohan Changes US1610716 -->
+                                    <apex:inputField value="{!case.Principal_Address_2__c}" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.principal__c = 'Other' && (case.Account_Type__c='Mortgage Loan' ) && (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false    && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }" />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>   
+                                
+                                <apex:pageBlockSectionItem >
+                                    <!-- Mohan Changes for US1610716 -->
+                                    <apex:outputLabel value="Principal City/State/Zip" rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute') && case.principal__c = 'Other' &&  (case.Account_Type__c='Mortgage Loan' ) && (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false   && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/> 
+                                    <apex:define name="requiredSelectAccount">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"></div>
+                                            <!-- Mohan Changes for US1610716  -->
+                                            <apex:inputField value="{!case.Principal_City_State_Zip__c}"  rendered="{!((case.Type = 'Dispute' || case.Type = 'Deposit Dispute')  && case.principal__c = 'Other' && (case.Account_Type__c='Mortgage Loan' ) && (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial') && case.Account_Account_Type_Not_Provided__c = false  && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)' &&  case.Call_Source__c != 'CARRT' && case.Call_Source__c != 'MERT' && case.Call_Source__c != 'Legal' && case.Call_Source__c != 'Social Media' && case.Call_Source__c != 'CLEAR' && case.Call_Source__c != 'CFS' ) ) }"/>
+                                        </div>
+                                    </apex:define>    
+                                </apex:pageBlockSectionItem>
+                                
+                                <!------------------------------ Letter Section Stop 31/05/2017 -------------------------------->                            
+                            </apex:pageBlockSection> 
+                            
+                            <apex:outputPanel />                 
+                        </apex:outputPanel>
+                        
+                        
+                        <apex:outputPanel id="letterSectionForInquiryRemoval" >
+                            <apex:outputPanel >
+                                <apex:pageBlockSection title="Letter Details"  rendered="{!case.Type='Inquiry Removal Request' && case.Call_Source__c!='eOscar(Non Fraud)' && case.Call_Source__c!='eOscar(Fraud)'}" >                         
+                                    
+                                    <apex:pageBlockSectionItem rendered="{! (case.Call_Source__c!='eOscar(Non Fraud)' && case.Call_Source__c!='eOscar(Fraud)')}">
+                                        <apex:outputLabel value="NC Property State"/>                            
+                                        <apex:actionRegion >
+                                            <!-- August 2024 - US1328358 - CD.01 - NC Property State Alignment with Letters Code
+                                            <apex:inputField value="{!case.NC_Property_State__c}" > -->
+                                            <apex:inputField value="{!case.NC_Property_State__c}" rendered="{! (case.Letters__c != 'CB105 - CBD NC Update' && case.Letters__c != 'CB106 - CBD NC Denial')}">
+                                                <apex:actionSupport event="onchange" action="{!nullifyLetterFields}" rerender="letterSectionForInquiryRemoval" status="LetterStatus" />                                      
+                                            </apex:inputField>
+                                            <!-- August 2024 - US1328358 - CD.01 - NC Property State Alignment with Letters Code -->
+                                            <apex:outputfield value="{!case.NC_Property_State__c}" rendered="{! (case.Letters__c == 'CB105 - CBD NC Update' || case.Letters__c == 'CB106 - CBD NC Denial')}"/>
+                                        </apex:actionRegion>
+                                    </apex:pageBlockSectionItem>
+                                    
+                                    <apex:pageBlockSectionItem rendered="{! !(case.Call_Source__c!='CARRT' && case.Call_Source__c!='MERT' && case.Call_Source__c!='CLEAR' && case.Call_Source__c!='Social Media' && case.Call_Source__c!='eOscar(Non Fraud)' && case.Call_Source__c!='eOscar(Fraud)' && case.Call_Source__c!='Legal' )}"/>
+                                    
+                                    <!-- Start Changes for the rendering conditions for the CD bug Fix 2015 -->   
+                                    <apex:pageBlockSectionItem rendered="{!(case.Call_Source__c!='CARRT' && case.Call_Source__c!='MERT' && case.Call_Source__c!='CLEAR' && case.Call_Source__c!='Social Media' && case.Call_Source__c!='eOscar(Non Fraud)' && case.Call_Source__c!='eOscar(Fraud)' && case.Call_Source__c!='Legal' )}">
+                                        <apex:outputLabel value="Letters"  />
+                                        <apex:define name="requiredSelectAccount">
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock" ></div> 
+                                                <apex:actionRegion >
+                                                    <apex:inputField value="{!case.Letters__c}" >
+                                                        <apex:actionSupport event="onchange" action="{!assignStatusOnTheBasisOfLetter}" rerender="letterSectionForInquiryRemoval,DealershipInformationPanel,DealershipSection,InquiryPanel,InquirySection,InquiryRemovalSection1,InquiryRemovalSection,CaseClosurePanel,CaseClosureSection,CaseClosureSection1,MissingIformationPanel,DOFDAndPrincipal,DOFD1,Principal1,CurrentLoanBalance1,PrincipalName1,SuspenseBalance1,PrincipalAddress1,EscrowBalance1,PrincipalAddress2" status="LetterStatus" />
+                                                    </apex:inputField> 
+                                                </apex:actionRegion>
+                                            </div>
+                                        </apex:define>  
+                                    </apex:pageBlockSectionItem>
+                                    
+                                    <!--CD Stories addition of new fields-->
+                                    <apex:pageBlockSectionItem rendered="{!!case.NC_Property_State__c}"/>
+                                    
+                                    <apex:pageBlockSectionItem rendered="{! case.NC_Property_State__c}">
+                                        <apex:outputLabel value="Check if Account is Delinquent"/>
+                                        <apex:actionRegion >                           
+                                            <apex:inputField id="debtDeliquency" value="{!case.Debt_Delinquency__c}" >                                                                                         
+                                                <apex:actionSupport event="onchange"  action="{!nullifyLetterFields}" rerender="letterSectionForInquiryRemoval" status="LetterStatus" />                                      
+                                            </apex:inputField>
+                                        </apex:actionRegion>
+                                    </apex:pageBlockSectionItem>
+                                    <apex:pageBlockSectionItem rendered="{! case.Letters__c == null || case.Letters__c == 'No Letter Needed' || case.Letters__c == 'CB101 - DealerNbr Inquiries'}"/>
+                                    
+                                    <apex:pageBlockSectionItem id="options2" rendered="{!case.Letters__c != null && case.Letters__c != 'No Letter Needed' && case.Letters__c != 'CB101 - DealerNbr Inquiries'}">                             
+                                        <apex:outputLabel value="Options"   /> 
+                                        <apex:define name="requiredSelectAccount">
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock" ></div> 
+                                                <apex:actionRegion >
+                                                    <apex:inputField value="{!case.Options__c}" >
+                                                        <apex:actionSupport event="onchange" rerender="letterSectionForInquiryRemoval,lastReportingDate" status="LetterStatus" />                                         
+                                                    </apex:inputField>   
+                                                </apex:actionRegion>
+                                            </div>
+                                        </apex:define>                              
+                                    </apex:pageBlockSectionItem> 
+                                    
+                                    <!-- <apex:inputField id="options" value="{!case.Options__c}" rendered="{!case.Letters__c != null && case.Letters__c != 'No Letter Needed'}" style="width:250px">
+<apex:actionSupport event="onchange" rerender="LetterSection,lastReportingDate" status="LetterStatus" />                                         
+</apex:inputField>-->
+                                    <apex:pageBlockSectionItem rendered="{! !case.Debt_Delinquency__c }"/>
+                                    
+                                    <apex:inputField id="debtDeliquencyDate" value="{!case.Debt_Delinquency_Date__c}" rendered="{! case.Debt_Delinquency__c == true}"/>    
+                                    
+                                    <apex:pageBlockSectionItem rendered="{! case.Options__c == '104B - Duplicate Dispute'}"/>
+                                    
+                                    <apex:pageBlockSectionItem id="lastReportingDate" rendered="{!case.Options__c == '104B - Duplicate Dispute'}">
+                                        <apex:outputLabel value="Last Reporting Date"   /> 
+                                        <apex:define name="requiredSelectAccount">
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock" ></div> 
+                                                <apex:inputField value="{!case.Last_Reporting_Date__c}" />                                                                        
+                                            </div>
+                                        </apex:define>                              
+                                    </apex:pageBlockSectionItem> 
+                                    
+                                    <!-- Start Changes for the rendering conditions for the CD bug Fix 2015 -->  
+                                    <!--Commented as part of  B-345751-->
+                                    <!--apex:pageBlockSectionItem >
+Removal Of Delinquences For Month/Year(s)
+<apex:outputPanel >
+<table>
+<tr>
+<td>
+<div class="requiredInput">
+<div class="requiredBlock" style="{!IF(case.Options__c='Removal of delinquencies for the month(s) of Month/Year','background-color:C00','background-color:transparent')}"></div>
+<div style="width:75px">
+<apex:selectList value="{!sourceDelinquences}" multiselect="true" size="10" style="width:100%">                
+<apex:selectOptions value="{!Source}" />            
+</apex:selectList>
+</div>
+</div>   
+</td>
+<td style="vertical-align: middle;">
+<table>
+<tr>
+<td>
+<apex:commandLink action="{!addTodelinquencesDestinationList}" reRender="LetterDetailsPanel" status="LetterStatus">
+<apex:image styleClass="picklistArrowRight" value="/s.gif"/>
+</apex:commandLink>
+</td>
+</tr>
+<tr>
+<td>
+<apex:commandLink action="{!removeFromDelinquencesDestinationList}" reRender="LetterDetailsPanel" status="LetterStatus">
+<apex:image styleClass="picklistArrowLeft" value="/s.gif"/>
+</apex:commandLink>
+</td>
+</tr>
+</table>
+
+</td>
+<td>
+<div style="width:75px">
+<apex:selectList value="{!destinationDelinquences}" multiselect="true" size="10" style="width:100%">                
+<apex:selectOptions value="{!destination}" />            
+</apex:selectList>
+</div>    
+</td>
+</tr>
+</table>
+</apex:outputPanel>
+</apex:pageBlockSectionItem-->
+                                    
+                                    
+                                    <!-- Start Credit Dispute Warranty 2 fix -->
+                                    <!--Commented as part of B-345754 ---- >
+<!--apex:pageBlockSectionItem >
+<apex:outputLabel value="Options"/>
+<apex:define name="OptionsVal" >                            
+<div class="requiredInput">
+<div class="requiredBlock" style="{!IF((case.Letters__c = 'STB Update' || case.Letters__c = 'STM Update' || case.Letters__c = 'STM Update Delinquent' || case.Letters__c = 'STM Update Current' || case.Letters__c = 'STB Update Current' || case.Letters__c = 'STB Update Delinquent'),'background-color:C00','background-color:transparent')}"></div>       
+<apex:inputField value="{!case.Options__c}" styleClass="picksize">
+<apex:actionSupport event="onchange" rerender="letterSectionForInquiryRemoval" status="LetterStatus" />
+</apex:inputField> 
+</div>
+</apex:define>    
+</apex:pageBlockSectionItem>
+<!-- End Credit Dispute Warranty 2 fix -->
+                                </apex:pageBlockSection>                   
+                            </apex:outputPanel>
+                            
+                            <apex:actionStatus id="LetterStatus">
+                                <apex:facet name="start">
+                                    <div style="text-align:center">
+                                        <img src="{!$Resource.SpinIcon}"/>
+                                        <span class="waitingDescription"></span>
+                                    </div>
+                                </apex:facet>
+                            </apex:actionStatus>                          
+                        </apex:outputPanel>
+                    </apex:outputPanel>      
+                    
+                    <!-- ********************** MISSING INFORMATION/INVESTIGATION ******************* -->    
+                    <apex:outputPanel id="MissingIformationPanel"> 
+                        <apex:outputPanel >           
+                            <apex:pageBlockSection title="Missing Information / Investigation" columns="2" rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='Inquiry Removal Request' && case.Type!='MSP Task' && case.Type!='QWR' && (case.Letters__c = 'STB Missing Info' || case.Letters__c = 'STM Missing Info')}"> <!--Added for Case Type=MSP Task-->
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Full Account Number"/>
+                                    <apex:inputField value="{!case.Full_Account_Number__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Social Security Number"/>
+                                    <apex:inputField value="{!case.Social_Security_Number__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="The specific information being disputed"/>
+                                    <apex:inputField value="{!case.The_specific_information_being_disputed__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Copy of Recent Credit Report"/>
+                                    <apex:inputField value="{!case.Copy_of_Recent_Credit_Report__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Exact Date of Credit Inquiry"/>
+                                    <apex:inputField value="{!case.Exact_Date_of_Credit_Inquiry__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Missing Drivers License"/>
+                                    <apex:inputField value="{!case.Missing_Drivers_License__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Credit Bureau Reporting Derogatory Info"/>
+                                    <apex:inputField value="{!case.Credit_Bureau_Reporting_Derogatory_Info__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="ACAPS Number"/>
+                                    <apex:inputField value="{!case.ACAPS_Number__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="All other supporting documentation"/>
+                                    <apex:inputField value="{!case.All_other_supporting_documentation__c}"  />
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    
+                    <!--Dealership Information Section-->
+                    
+                    <apex:outputPanel id="DealershipInformationPanel"> 
+                        <apex:outputPanel id="DealershipSection">    
+                            
+                            <apex:pageBlockSection title="Dealership Information" columns="2" rendered="{!case.Type!='Validation' && case.Type!='Internal Request' &&  case.Type!='MSP Task' && case.Letters__c == 'CB101 - DealerNbr Inquiries'}" > <!--Added for Case Type=MSP Task-->
+                                
+                                <apex:pageBlockSectionItem >
+                                    
+                                    <apex:outputLabel value="Dealership Name"/>
+                                    <apex:define name="delphoneNumber" >
+                                        <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!case.Letters__c = 'Dealership Credit Inquiry Valid Letter'}"  id="image1"/>-->
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF(case.Letters__c = 'CB101 - DealerNbr Inquiries','background-color:C00','background-color:transparent')}"></div>       
+                                            <apex:inputField value="{!case.Dealership_Name__c}" />
+                                        </div>
+                                    </apex:define>   
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Dealership Phone Number"/>
+                                    <apex:define name="delphoneNumber" >
+                                        <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!case.Letters__c = 'Dealership Credit Inquiry Valid Letter'}"  id="image2"/>-->
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF(case.Letters__c = 'CB101 - DealerNbr Inquiries','background-color:C00','background-color:transparent')}"></div>       
+                                            <apex:inputField value="{!case.Dealership_Phone_Number__c}" />
+                                        </div>
+                                    </apex:define>                       
+                                <!-- April 2025 -US1552915 / US1423244 - CD.5a - Enable the fields on Credit Dispute Dealership Section -->                                 </apex:pageBlockSectionItem>
+                                <!--MARCH 2023><MARCH 2023 -->
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Application Credit Dispute?"/>
+                                    <apex:define name="delphoneNumber" >
+                                            <apex:inputField value="{!case.Application_Credit_Dispute__c}"/>
+                                    </apex:define>       
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Application ID"/>
+                                    <apex:define name="delphoneNumber" >
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF(case.Letters__c = 'CB101 - DealerNbr Inquiries','background-color:C00','background-color:transparent')}"></div>       
+                                            <apex:inputField value="{!case.Application_ID__c}"/>
+                                        </div>
+                                    </apex:define>       
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                            
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    
+                    <!--Inquiry Section-->
+                    
+                    <apex:outputPanel id="InquiryPanel"> 
+                        <apex:outputPanel >           
+                            <apex:pageBlockSection id="InquirySection" title="Inquiry" columns="2" rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task' && case.Type!='Inquiry Removal Request' &&  (case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For' || case.Letters__c = 'Remove Inquiry letter')}"> <!--Added for Case Type=MSP Task-->
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Type of Account Applied For"/>
+                                    <apex:define name="delphoneNumber" >
+                                        <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For'}"  id="image4"/>-->
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF((case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For' || case.Letters__c = 'Remove Inquiry letter') ,'background-color:C00','background-color:transparent')}"></div>       
+                                            <apex:inputField value="{!case.Type_of_Account_Applied_For__c}" />
+                                        </div>
+                                    </apex:define>
+                                </apex:pageBlockSectionItem> 
+                                
+                                <apex:pageBlockSectionItem rendered="{!case.Type !='Internal Request' && case.Type != 'MSP Task' }" >
+                                    <apex:outputLabel value="Date of Application" />
+                                    <apex:define name="delphoneNumber" >
+                                        <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!OR(case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For',case.Status='Closed')}"  id="image6"/>-->
+                                        <div class="requiredInput"> <!--Start Credit Dispute Changes Warranty 1 End-->
+                                            <div class="requiredBlock" style="{!IF(AND(OR(case.Letters__c ='Cannot Remove Inquiry Letter Credit Applied For',case.Letters__c = 'Remove Inquiry letter',case.Status='Closed'),case.Call_Source__c!='eOscar(Non Fraud)',case.Call_Source__c!='eOscar(Fraud)'),'background-color:C00','background-color:transparent')}"></div>       
+                                            <apex:inputField value="{!case.Date_of_Application_To_SunTrust__c}"  />
+                                        </div>
+                                    </apex:define>
+                                    
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Current Status of Request For Credit"/>
+                                    <apex:define name="delphoneNumber" >
+                                        <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For'}"  id="image5"/>-->
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF((case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For' || case.Letters__c = 'Remove Inquiry letter'),'background-color:C00','background-color:transparent')}"></div>       
+                                            <apex:inputField value="{!case.Current_Status_of_Request_For_Credit__c}" />
+                                        </div>
+                                    </apex:define>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="InquiryRemovalSection1">
+                        <!-- June 2025 - US1450241 - CD.6 - Application ID for Inquiry Removal Request
+                        <apex:pageBlockSection title="Inquiry" id="InquiryRemovalSection" rendered="{! case.Type='Inquiry Removal Request' &&  (case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For' || case.Letters__c = 'Remove Inquiry letter')}" > -->    <!-- Added for Case Type=MSP Task-->
+                        <apex:pageBlockSection title="Inquiry" id="InquiryRemovalSection" columns="2" rendered="{! case.Type='Inquiry Removal Request'}" >  
+                            
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Type of Account Applied For"/>
+                                <apex:define name="delphoneNumber" >
+                                    <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For'}"  id="image4"/>-->
+                                    <div class="requiredInput">
+                                        <!-- June 2025 - US1450241 - CD.6 - Application ID for Inquiry Removal Request                      
+                                        <div class="requiredBlock" style="{!IF((case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For' || case.Letters__c = 'Remove Inquiry letter'),'background-color:C00','background-color:transparent')}"></div> -->        
+                                        <div class="requiredBlock" style="{'background-color:C00','background-color:transparent')}"></div>                            
+                                        <apex:inputField value="{!case.Type_of_Account_Applied_For__c}" />
+                                    </div>
+                                </apex:define>
+                            </apex:pageBlockSectionItem>
+                            
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Current Status of Request For Credit"/>
+                                <apex:define name="delphoneNumber" >
+                                    <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For'}"  id="image5"/>-->
+                                    <div class="requiredInput">
+                                        <!-- June 2025 - US1450241 - CD.6 - Application ID for Inquiry Removal Request                        
+                                        <div class="requiredBlock" style="{!IF((case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For' || case.Letters__c = 'Remove Inquiry letter'),'background-color:C00','background-color:transparent')}"></div> -->       
+                                        <div class="requiredBlock" style="{'background-color:C00','background-color:transparent')}"></div>                            
+                                        <apex:inputField value="{!case.Current_Status_of_Request_For_Credit__c}" />
+                                    </div>
+                                </apex:define>
+                            </apex:pageBlockSectionItem>
+                            
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="ACAPS # / Application #"/> <!--//This field is repeated in the requirement. It is present in the first section 'Case Type Details' section and this section. It needs to be clarified.-->
+                                <apex:inputField value="{!case.ACAPS__c}" />
+                            </apex:pageBlockSectionItem>
+                            
+                            
+                            <apex:pageBlockSectionItem rendered="{!case.Type !='Internal Request' && case.Type != 'MSP Task' }" >
+                                <apex:outputLabel value="Date of Application" />
+                                <apex:define name="delphoneNumber" >
+                                    <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!OR(case.Letters__c = 'Cannot Remove Inquiry Letter Credit Applied For',case.Status='Closed')}"  id="image6"/>-->
+                                    <div class="requiredInput"> <!--Start Credit Dispute Changes Warranty 1 End-->
+                                        <div class="requiredBlock" style="{!IF(AND(OR(case.Letters__c ='Cannot Remove Inquiry Letter Credit Applied For', case.Letters__c = 'Remove Inquiry letter',case.Status='Closed'),case.Call_Source__c!='eOscar(Non Fraud)',case.Call_Source__c!='eOscar(Fraud)'),'background-color:C00','background-color:transparent')}"></div>       
+                                        <apex:inputField value="{!case.Date_of_Application_To_SunTrust__c}"  />
+                                    </div>
+                                </apex:define>
+                                
+                            </apex:pageBlockSectionItem>
+                            
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Additional ACAPS1 # / Application #" />
+                                <apex:inputField value="{!case.Additional_ACAPS1__c}" /> 
+                            </apex:pageBlockSectionItem>
+                            
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Additional Application Date1" />
+                                <apex:inputField value="{!case.Additional_Application_Date1__c}" /> 
+                            </apex:pageBlockSectionItem>
+                            
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Additional ACAPS2 # / Application #" />
+                                <apex:inputField value="{!case.Additional_ACAPS2__c}" /> 
+                            </apex:pageBlockSectionItem>
+                            
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Additional Application Date2" />
+                                <apex:inputField value="{!case.Additional_Application_Date2__c}" /> 
+                            </apex:pageBlockSectionItem>
+                            
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <!--Missing Information Section for Case Type=Inquiry Removal Request-->
+                    <apex:outputPanel id="MissingIformationPanelForInquiryRemoval"> 
+                        <apex:outputPanel >           
+                            <apex:pageBlockSection title="Missing Information" columns="2" rendered="{!(case.Type='Inquiry Removal Request') && (case.Letters__c = 'STB Missing Info' || case.Letters__c = 'STM Missing Info') }"> 
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Full Account Number"/>
+                                    <apex:inputField value="{!case.Full_Account_Number__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Social Security Number"/>
+                                    <apex:inputField value="{!case.Social_Security_Number__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="The specific information being disputed"/>
+                                    <apex:inputField value="{!case.The_specific_information_being_disputed__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Copy of Recent Credit Report"/>
+                                    <apex:inputField value="{!case.Copy_of_Recent_Credit_Report__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Exact Date of Credit Inquiry"/>
+                                    <apex:inputField value="{!case.Exact_Date_of_Credit_Inquiry__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Missing Drivers License"/>
+                                    <apex:inputField value="{!case.Missing_Drivers_License__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Credit Bureau Reporting Derogatory Info"/>
+                                    <apex:inputField value="{!case.Credit_Bureau_Reporting_Derogatory_Info__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="ACAPS Number"/>
+                                    <apex:inputField value="{!case.ACAPS_Number__c}"  />
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="All other supporting documentation"/>
+                                    <apex:inputField value="{!case.All_other_supporting_documentation__c}"  />
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    
+                    <!--Investigation Panel-->
+                    
+                    <!--<apex:outputPanel id="InvestigationPanel"> 
+<apex:outputPanel >           
+<apex:pageBlockSection title="Investigation and Research" columns="2" rendered="{!case.Type!='Validation' && case.Type!='Internal Request' && case.Type!='MSP Task'}">
+<apex:pageBlockSectionItem > 
+<apex:outputlabel value="Tasks Completed" />         
+<apex:inputField value="{!case.Tasks_Completed__c}" />
+</apex:pageBlockSectionItem>
+</apex:pageBlockSection>
+</apex:outputPanel>
+</apex:outputPanel>-->
+                    
+                    <apex:outputPanel id="CaseClosurePanel">             
+                        <apex:outputPanel >
+                            <apex:pageBlockSection id="CaseClosureSection1" title="Case Closure" columns="2" rendered="{! case.Type!='Internal Request' && case.Type!='MSP Task'}">  <!--Added for Case Type=MSP Task-->
+                                
+                                
+                                <!-- October 2024 - US1381479 - CD.1 - Decision Code for Direct Cases -->
+                                <!-- <apex:pageBlockSectionItem rendered="{!case.Type='Inquiry Removal Request' || case.Type='Dispute' || case.Type='QWR' }">  --> 
+                                 <!-- Mohan Changes US1610716 -->
+                                <apex:pageBlockSectionItem rendered="{!((case.Type='Inquiry Removal Request' || case.Type='QWR') || ((case.Type='Dispute' ||case.Type = 'Deposit Dispute')  && (case.Call_Source__c = 'eOscar(Fraud)' || case.Call_Source__c = 'eOscar(Non Fraud)' || case.Call_Source__c = Null))) }">
+                                    <apex:outputlabel value="Decision Code" /> 
+                                    <apex:define name="delphoneNumber" >
+                                        <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!case.Status='Closed'}"  id="image4"/>-->        
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF(case.Status='Closed','background-color:C00','background-color:transparent')}"></div>       
+                                            <apex:inputField value="{!case.Decision_Code__c}" styleClass="picksize"/>
+                                        </div>
+                                    </apex:define>
+                                    
+                                </apex:pageBlockSectionItem>
+                                
+                                 <!--apex:pageBlockSectionItem rendered="{!!((case.Type='Inquiry Removal Request' || case.Type='QWR') || (case.Type='Dispute' && (case.Call_Source__c = 'eOscar(Fraud)' || case.Call_Source__c = 'eOscar(Non Fraud)' || case.Call_Source__c = Null))) }">
+                                     <br/>
+                                </apex:pageBlockSectionItem-->
+                                <!-- Mohan Changes US1610716 -->
+                                <apex:pageBlockSectionItem rendered="{!case.Type='Inquiry Removal Request' || case.Type='Dispute' || case.Type = 'Deposit Dispute' || case.Type='QWR' }"> 
+                                    <apex:outputlabel value="Dispute Type" /> 
+                                    <apex:define name="delphoneNumber" >
+                                        <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!case.Status='Closed'}"  id="image4"/>                -->
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF(case.Status='Closed','background-color:C00','background-color:transparent')}"></div>       
+                                            <apex:inputField value="{!case.Dispute_Type__c}" styleClass="picksize"/>
+                                        </div>
+                                    </apex:define>
+                                    
+                                </apex:pageBlockSectionItem>
+                            <!--Chnages start for September DE144733: Screen shifts when decision code is removed.-->    
+                            </apex:pageBlockSection>
+                                
+                                <apex:pageBlockSection id="CaseClosureSection" columns="2" rendered="{! case.Type!='Internal Request' && case.Type!='MSP Task'}">
+                            <!--Chnages end for September DE144733: Screen shifts when decision code is removed.--> 
+                                 <!-- Mohan Changes for US1610716    -->
+                                <apex:pageBlockSectionItem rendered="{! case.Type='Dispute' || case.Type = 'Deposit Dispute'|| case.Type='QWR' }" > 
+                                    <apex:outputlabel value="Dispute Type 2" />         
+                                    <apex:inputField value="{!case.Dispute_Type_2__c}" styleClass="picksize" />
+                                </apex:pageBlockSectionItem>
+                                <!-- Mohan Changes as per US1610716 -->
+                                <apex:pageBlockSectionItem rendered="{!case.Type='Dispute' || case.Type = 'Deposit Dispute' || case.Type='QWR' }"/>
+                                
+                                <apex:pageBlockSectionItem >          
+                                    <apex:outputlabel value="Status" />
+                                    
+                                    <apex:inputField value="{!case.Status}" required="true"> 
+                                        <apex:actionSupport event="onchange" action="{!assignFieldsOnChangeOfStatus}" rerender="LetterSection,recResolationid,InquiryPanel,InquirySection,InquiryRemovalSection1,InquiryRemovalSection,additionlFieldsForInquiryRemoval2,CaseClosureSection,CaseClosureSection1,CaseClosurePanel,StatusChange,statusReqForDispute,sectionForValidationInternalRequest,accountTypeDetail,accountTypeDetail3,accountTypeDetail1" status="selectStatusQWR" /> 
+                                    </apex:inputField>  
+                                    
+                                </apex:pageBlockSectionItem>
+                                
+                                <!-- Mohan Changes for US1610716 -->
+                                <apex:pageBlockSectionItem rendered="{!case.Type='Inquiry Removal Request' || case.Type='Dispute' || case.Type = 'Deposit Dispute' || case.Type='QWR' }"> 
+                                    <apex:outputlabel value="Root Cause" />
+                                    <apex:define name="delphoneNumber" >
+                                        <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!case.Status='Closed'}"  id="image4"/>  -->
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF(case.Status='Closed','background-color:C00','background-color:transparent')}"></div>                     
+                                            <apex:inputField value="{!case.Root_Cause__c}" />
+                                        </div>
+                                    </apex:define>
+                                    
+                                </apex:pageBlockSectionItem>
+                                
+                                
+                                <apex:pageBlockSectionItem id="statusReqForDispute">
+                                    <apex:outputlabel value="Status Reason" />
+                                    <apex:define name="delphoneNumber" >
+                                        <!--<apex:image value="{!$Resource.mandatorySign}" height="15px" width="5px" rendered="{!case.Status='Closed'}"  id="image4"/>                -->
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF((case.Status='Closed' ),'background-color:C00','background-color:transparent')}"></div>       
+                                            <!--apex:actionRegion -->
+                                            <apex:inputField value="{!case.Status_Reason__c}" >
+                                                <apex:actionSupport event="onchange" action="{!nullifyApprovalDenailDetail}" rerender="CaseClosurePanel,aseClosureSection,statusReqForDispute" status="selectStatusQWR" /> 
+                                            </apex:inputField>
+                                            <!--/apex:actionRegion-->
+                                        </div> 
+                                    </apex:define>                               
+                                </apex:pageBlockSectionItem>
+                                
+                                
+                                
+                                <apex:pageBlockSectionItem />
+                                
+                                <!-- Commented as part of CD Sept Release '21-->
+                                <!--apex:pageBlockSectionItem rendered="{!((case.Type='Dispute' || case.Type='QWR' || case.Type='Inquiry Removal Request')&&(case.Status_Reason__c = 'Approved' || case.Status_Reason__c = 'Denied'))}">
+<apex:outputlabel value="Approval/Denial Detail" />
+<apex:define name="approvalDenialDetail" >                            
+<div class="requiredInput">
+<div class="requiredBlock" style="{!IF((case.Status_Reason__c = 'Approved' || case.Status_Reason__c = 'Denied'),'background-color:C00','background-color:transparent')}"></div>   
+<apex:inputField value="{!case.Approval_Denial_Detail__c}" />
+</div> 
+</apex:define>                           
+</apex:pageBlockSectionItem--> 
+                                
+                                
+                                
+                                <!--apex:pageBlockSectionItem rendered="{! (case.Type='Dispute' || case.Type='QWR' || case.Type='Inquiry Removal Request') && (case.Status_Reason__c = 'Approved' || case.Status_Reason__c = 'Denied')}" /--> 
+                                <!-- Mohan Changes for US1610716 -->
+                                <apex:pageblockSectionItem rendered="{!case.Type='Dispute' || case.Type = 'Deposit Dispute' || case.Type='QWR'  ||case.Type=='Inquiry Removal Request' }">
+                                    <apex:outputlabel value="Case Comments Reviewed" />
+                                    <apex:inputField value="{!case.Case_Comments_Reviewed__c  }" />
+                                </apex:pageBlockSectionItem>
+                                
+                                <!--Added new field Natural Disaster-->
+                                <!--Removed As part of CD Sept Release 21-->
+                                <!--apex:pageblockSectionItem /-->
+                                
+                                <!--apex:pageblockSectionItem >
+<apex:outputlabel value="Natural Disaster" />
+<apex:inputField value="{!case.Natural_Disaster__c}" />
+</apex:pageBlockSectionItem-->
+                                <!--Added new field Natural Disaster--> 
+                                
+                                <apex:pageBlockSectionItem rendered="{!case.Type='Dispute' ||case.Type = 'Deposit Dispute' || case.Type='QWR' ||case.Type=='Inquiry Removal Request'  }"/>
+                                <!-- Mohan Changes US1610716 -->
+                                <apex:pageBlockSectionItem rendered="{! case.Type='Inquiry Removal Request' || case.Type='Dispute' || case.Type = 'Deposit Dispute' || case.Type='QWR'   }"> 
+                                    <apex:outputLabel value="Resolution Comments" />                        
+                                    <apex:outputPanel id="recResolationid">
+                                        
+                                        <apex:define name="requiredClientFeedback">
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock" style="{!IF(case.Status!='Closed','background-color:transparent','background-color:C00')}"></div>       
+                                                <apex:inputTextArea value="{!case.Resolution_Comments__c}" cols="55" rows="7"/> <!--//A validation for this needs to be written in the code.-->
+                                            </div>
+                                        </apex:define>
+                                    </apex:outputPanel>                       
+                                </apex:pageBlockSectionItem>
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputlabel value="If there was XB AUD done for this case have you completed XR AUD to close this case?" />
+                                    <apex:define name="requiredXRAUD"> 
+                                        <div class="requiredInput">
+                                            <!-- Mohan Changes for US1610716 -->
+                                            <div class="requiredBlock" style="{!IF(AND(case.Status='Closed',((case.Type='Dispute' || case.Type = 'Deposit Dispute') && (case.Call_Source__c != 'eOscar(Fraud)' && case.Call_Source__c != 'eOscar(Non Fraud)'))),'background-color:C00','background-color:transparent')}"></div>                                 
+                                            <apex:inputField value="{!case.Was_XR_AUD_Done__c}" />
+                                        </div>
+                                    </apex:define>    
+                                    
+                                </apex:pageBlockSectionItem> 
+                                <!--apex:inputField label="If there was XB AUD done for this case have you completed XR AUD to close this case?" value="{!case.Was_XR_AUD_Done__c}"  required="true" /-->
+                                
+                                <!--<apex:pageBlockSectionItem rendered="{!case.Type='Inquiry Removal Request' || case.Type='Dispute' || case.Type='QWR' }"/>-->
+                                <!-- Mohan Changes for US1610716 -->
+                                <apex:pageBlockSectionItem rendered="{!case.Type='Inquiry Removal Request' || case.Type='Dispute' || case.Type = 'Deposit Dispute' || case.Type='QWR' }"> 
+                                    <apex:outputlabel value="SLA Missed Comments" /> 
+                                    <apex:inputTextarea value="{!case.SLA_Missed_Comments__c}" cols="55" rows="7" />
+                                    
+                                </apex:pageBlockSectionItem>                      
+                                
+                                <!--Commented as part of CD Sept Release'21-->
+                                <!--apex:pageBlockSectionItem rendered="{!case.Type='Dispute'}"/>
+<apex:pageBlockSectionItem rendered="{!case.Type='Dispute'}">
+<apex:outputLabel value="Escalation Cases: Quality Review"/>
+<!--apex:inputTextArea value="{!case.Escalation_Cases_Quality_Review__c}" cols="55" rows="7" /-->
+                                <!--apex:inputField value="{!case.Escalation_Cases_Quality_Review__c}" style="width:347px;"/>
+</apex:pageBlockSectionItem-->
+                                <apex:pageBlockSectionItem />
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputlabel value="Credit Dispute Reason Code" />
+                                    <apex:define name="requiredCDReasonCode"> 
+                                        <div class="requiredInput">
+                                            <!-- Mohan Changes for US1610716 -->
+                                            <div class="requiredBlock" style="{!IF((case.Type!='Dispute' && case.Type != 'Deposit Dispute'),'background-color:transparent','background-color:C00')}"></div>                                            
+                                            <!-- October 2024 - US1393922 - CD.2 - Credit Dispute Reason Code Fix -->
+                                            <!-- <apex:inputField value="{!case.Credit_Dispute_Reason_Code__c}" required="{!case.Type='Dispute'}" />  -->
+                                            <apex:inputField value="{!case.Credit_Dispute_Reason_Code__c}" />
+                                        </div>
+                                    </apex:define>    
+                                    
+                                </apex:pageBlockSectionItem> 
+                                
+                                <!--apex:inputField value="{!case.Credit_Dispute_Reason_Code__c}" required="true" /-->
+                                
+                            </apex:pageBlockSection>                   
+                            
+                            
+                            <apex:outputPanel >
+                                <apex:actionStatus id="selectStatusQWR">
+                                    <apex:facet name="start">
+                                        <div style="text-align:center">
+                                            <img src="{!$Resource.SpinIcon}"/>
+                                        </div>
+                                    </apex:facet>
+                                </apex:actionStatus>
+                            </apex:outputPanel> 
+                            
+                            <apex:pageBlockSection title="Case Closure" id="sectionForValidationInternalRequest" columns="2" rendered="{! case.Type='Internal Request'}" >
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Status"/>  
+                                    <apex:actionRegion >
+                                        <apex:inputField value="{!case.Status}" required="true">
+                                            <apex:actionSupport event="onchange" action="{!assignFieldsOnChangeOfStatus}" rerender="sectionForValidationInternalRequest,statusForReq" status="selectStatusInternalReq" />                                    
+                                        </apex:inputField>      
+                                    </apex:actionRegion>
+                                </apex:pageBlockSectionItem> 
+                                
+                                <apex:pageBlockSectionItem />
+                                
+                                <apex:pageBlockSectionItem id="statusForReq"> 
+                                    <apex:outputlabel value="Status Reason" />
+                                    <apex:define name="requiredClientFeedback"> 
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF(case.Status='Closed','background-color:C00','background-color:transparent')}"></div>                                            
+                                            <apex:inputField value="{!case.Status_Reason__c}" />
+                                        </div>
+                                    </apex:define>    
+                                    
+                                </apex:pageBlockSectionItem> 
+                                
+                                <!--apex:pageBlockSectionItem / -->
+                                <!--
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputlabel value="If there was XB AUD done for this case have you completed XR AUD to close this case?" />
+                                    <apex:define name="requiredXRAUD"> 
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="background-color:C00"></div>                                            
+                                            <apex:inputField value="{!case.Was_XR_AUD_Done__c}" />
+                                        </div>
+                                    </apex:define>    
+                                    
+                                </apex:pageBlockSectionItem--> 
+                                <apex:inputField label="If there was XB AUD done for this case have you completed XR AUD to close this case?" value="{!case.Was_XR_AUD_Done__c}" />
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Resolution Comments" />                        
+                                    <apex:outputPanel id="resoluationCommentid">
+                                        
+                                        <apex:define name="requiredClientFeedback">
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock" style="{!IF(case.Status='Closed','background-color:C00','background-color:transparent')}"></div>                                            
+                                                <apex:inputTextArea value="{!case.Resolution_Comments__c}" cols="45" rows="7" /><!-- //A validation for this needs to be written in the code.-->
+                                            </div>
+                                        </apex:define>
+                                    </apex:outputPanel>                       
+                                </apex:pageBlockSectionItem>
+                                
+                                
+                                <apex:pageBlockSectionItem />
+                                
+                                <apex:pageBlockSectionItem > 
+                                    <apex:outputlabel value="SLA Missed Comments" />        
+                                    <apex:inputTextArea value="{!case.SLA_Missed_Comments__c}" cols="45" rows="7"/>
+                                </apex:pageBlockSectionItem>     
+                                
+                                <apex:pageBlockSectionItem />
+                                
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputlabel value="Credit Dispute Reason Code" />
+                                    <apex:define name="requiredCDReasonCode"> 
+                                        <div class="requiredInput">
+                                            <!--changes start for June-2022-->
+                                            <!--div class="requiredBlock" style="background-color:C00"></div-->
+                                            <!-- Mohan Changes for US1610716 -->
+                                            <div class="requiredBlock" style="{!IF((case.Type!='Dispute' && case.Type != 'Deposit Dispute'),'background-color:transparent','background-color:C00')}"></div>                                            
+                                            <apex:inputField value="{!case.Credit_Dispute_Reason_Code__c}" />
+                                            <!--changes end for June-2022-->
+                                        </div>
+                                    </apex:define>    
+                                    
+                                </apex:pageBlockSectionItem> 
+                                <!--apex:inputField value="{!case.Credit_Dispute_Reason_Code__c}" required="true"/-->
+                                
+                            </apex:pageBlockSection>
+                            
+                            
+                            <apex:outputPanel >
+                                <apex:actionStatus id="selectStatusInternalReq">
+                                    <apex:facet name="start">
+                                        <div style="text-align:center">
+                                            <img src="{!$Resource.SpinIcon}"/>
+                                        </div>
+                                    </apex:facet>
+                                </apex:actionStatus>
+                            </apex:outputPanel>
+                            
+                            <apex:pageBlockSection title="Case Closure" id="sectionForMSPTask" columns="2" rendered="{!case.Type='MSP Task'}" > <!--Added for Case Type=MSP Task--> 
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Resolution Comments" />
+                                    <apex:outputPanel id="resoluationCommentidForMSP">
+                                        <apex:define name="requiredClientFeedback">
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock" style="{!IF(case.Status='Closed','background-color:C00','background-color:transparent')}"></div>
+                                                <apex:inputTextArea value="{!case.Resolution_Comments__c}" cols="55" rows="7"/>
+                                            </div>
+                                        </apex:define>
+                                    </apex:outputPanel>                    
+                                </apex:pageBlockSectionItem> 
+                                
+                                <!--apex:pageBlockSectionItem /-->
+                                <apex:inputField label="If there was XB AUD done for this case have you completed XR AUD to close this case?" value="{!case.Was_XR_AUD_Done__c}"/>
+                                
+                                
+                                <!--apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Status"/>
+                                    <!--apex:actionRegion-->
+                                    <!--apex:inputField value="{!case.Status}" required="true">
+                                        <apex:actionSupport event="onchange" action="{!assignFieldsOnChangeOfStatus}" rerender="sectionForMSPTask,resoluationCommentidForMSP,abcd" status="selectStatusMSPTask"/>
+                                    </apex:inputField> 
+                                    <!--/apex:actionRegion-->
+                                <!--/apex:pageBlockSectionItem--> 
+                                <!--Amit-->
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="Status"/>  
+                                    <apex:actionRegion >
+                                        <apex:inputField value="{!case.Status}" required="true">
+                                            <apex:actionSupport event="onchange" action="{!assignFieldsOnChangeOfStatus}" rerender="sectionForMSPTask" status="selectStatusMSPTask" />                                    
+                                        </apex:inputField>      
+                                    </apex:actionRegion>
+                                </apex:pageBlockSectionItem>
+                                <!--Amit-->
+                                <apex:pageBlockSectionItem />
+                                
+                                <apex:pageBlockSectionItem > 
+                                    <apex:outputlabel value="Status Reason" /> 
+                                    <apex:define name="stre">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock" style="{!IF(case.Status='Closed','background-color:C00','background-color:transparent')}"></div>                                            
+                                            <apex:inputField value="{!case.Status_Reason__c}" / >
+                                            </div>
+                                        </apex:define>
+                                        
+                                    </apex:pageBlockSectionItem> 
+                                    
+                                    
+                                    
+                                    <apex:pageBlockSectionItem />    
+                                    
+                                    
+                                    
+                                    <apex:pageBlockSectionItem > 
+                                        <apex:outputlabel value="SLA Missed Comments" />        
+                                        <apex:inputTextarea value="{!case.SLA_Missed_Comments__c}" cols="55" rows="7" /> <!--Removed after SIT required="{!case.Status='Closed'}"/ -->
+                                    </apex:pageBlockSectionItem> 
+                                    
+                                    <apex:pageBlockSectionItem /> 
+                                    <!--apex:inputField value="{!case.Credit_Dispute_Reason_Code__c}" required="true"/-->
+                                    <apex:pageBlockSectionItem >
+                                    <apex:outputlabel value="Credit Dispute Reason Code" />
+                                    <apex:define name="requiredCDReasonCode"> 
+                                        <div class="requiredInput">
+                                            <!-- Mohan Changes for US1610716 -->
+                                            <div class="requiredBlock" style="{!IF((case.Type!='Dispute' && case.Type != 'Deposit Dispute'),'background-color:transparent','background-color:C00')}"></div>                                            
+                                            <apex:inputField value="{!case.Credit_Dispute_Reason_Code__c}" />
+                                            
+                                        </div>
+                                    </apex:define>    
+                                    
+                                </apex:pageBlockSectionItem> 
+                                    
+                                    
+                                </apex:pageBlockSection>
+                                
+                                <apex:pageBlockSection > 
+                                    <apex:pageBlockSectionItem > 
+                                      
+                                    </apex:pageBlockSectionItem>                        
+                                </apex:pageBlockSection>
+                                
+                                <apex:outputPanel >
+                                    <apex:actionStatus id="selectStatusMSPTask">
+                                        <apex:facet name="start">
+                                        <div style="text-align:center">
+                                            <img src="{!$Resource.SpinIcon}"/>
+                                        </div>
+                                    </apex:facet>
+                                    </apex:actionStatus>
+                                </apex:outputPanel>
+                                
+                            </apex:outputPanel>
+                        </apex:outputPanel> 
+                        
+                        <!-- Case Closure Section -->
+                        
+                    </apex:actionRegion> 
+                    
+                    <apex:outputField value="{!case.Account_For_Open_Cases__c}" rendered="false" />
+                    <apex:outputField value="{!case.Account_For_Closed_Cases__c}" rendered="false" />  
+                    <apex:outputField value="{!case.CIF__c}" rendered="false" />
+                    <apex:outputField value="{!case.Assign_Select_Account__c}" rendered="FALSE"/>
+                    <apex:outputField value="{!case.SearchAccNumberValue__c}" rendered="FALSE"/>
+                    <apex:outputField value="{!case.SearchAccTypeValue__c}" rendered="FALSE"/>
+                    
+                </apex:pageBlock>
+                
+                <apex:outputPanel id="requestTypePopUp">
+                    <!-- Mohan Changes for US1610716 -->
+                    <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!(case.Type ='Dispute' || case.Type = 'Deposit Dispute') && messageNotSeenByUser==true}"/>
+                    <apex:outputPanel styleClass="custPopup" layout="block" rendered="{!(case.Type='Dispute' ||  case.Type = 'Deposit Dispute') && messageNotSeenByUser==true}">
+                        <div align="center" style="height:70%">
+                            <apex:outputText style="font-weight:800;" value="{!messageBody}"/>
+                        </div>
+                        <div style="height:35%">
+                            <apex:actionRegion >
+                                <apex:commandButton style="margin-left:45%" value="OK" action="{!closeRequestTypePopUpInquiry}" reRender="requestTypePopUp"/>
+                            </apex:actionRegion>
+                        </div>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                
+            </apex:form>
+            
+            <style type="text/css">
+                .custPopup
+                {
+                background-color: white;
+                border-width: 2px;
+                border-style: solid;
+                z-index: 9999;
+                left: 35%;
+                padding:1%;
+                position: fixed;
+                width: 58%;
+                margin-left: -15%;
+                top:45%;
+                height:11%;
+                }
+                .popupBackground
+                {
+                background-color:black;
+                opacity: 0.20;
+                filter: alpha(opacity = 20);
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                z-index: 9998;
+                }
+            </style>    
+            
+        </apex:page>
