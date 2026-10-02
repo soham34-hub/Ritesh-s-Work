@@ -2019,7 +2019,7 @@ rendered="{!OR(CRTQualityAssuranceSpecialist)}" />
                 
              </apex:pageBlockSection>
              <apex:pageBlockSection columns="2" >
-                <apex:inputField value="{!case.Single_Use_Promo_Code__c}"/>
+                <apex:inputField value="{!case.Single_Use_Promo_Code__c}" onkeyup="this.value = this.value.toUpperCase();"/>
                 </apex:pageblocksection>
             <apex:pageBlockSection columns="2">
                     <apex:inputField value="{!case.Initiative_Tracking__c}"
