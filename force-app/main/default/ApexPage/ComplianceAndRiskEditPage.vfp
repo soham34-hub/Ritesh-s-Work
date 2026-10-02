@@ -1,0 +1,915 @@
+<!--Page created for CMI 2014 Release 3 to modify the existing cases for Compliance & Risk record Type-->
+<apex:page standardController="Case" extensions="ComplianceAndRiskEdit_ControllerExtnsion,CategoryLists_ControllerExtension,CMIClientManagement_ControllerExtension" showHeader="True" sidebar="False" id="id1">
+  <!--The below script is added for CMI 2014 Release3 to remove the focus from submitter field.By default the cursor should not present in the submitter field-->
+  <script>
+      function setFocusOnLoad() 
+      { 
+       document.getElementById('{!$Component.MainForm}').focus();
+      } 
+      // Replacement for window.onload event
+      // If condition is for newer versions of IE & Else condition is for older versions of IE
+      if (document.addEventListener) document.addEventListener('DOMContentLoaded', setFocusOnLoad, false);
+      else document.attachEvent("onreadystatechange", setFocusOnLoad);
+      
+      function noenter(e)
+         {
+            if(window.event)
+            {
+                key = window.event.keyCode; 
+            } 
+            else
+            {
+                key = e.which; 
+            }
+            if(key == 13) 
+            {
+                var ele=document.getElementById('id1:MainForm:complianceForm:catButton:catButton1:catSearchButton');
+                ele.click();
+                return false;
+            } 
+            else
+            {
+                return true;
+            }
+         }
+
+      
+  </script>
+  <apex:messages style="color:red;font-weight:bold;" />
+  <apex:form id="MainForm">
+    <apex:pageBlock title="Compliance And Risk Case" mode="edit" id="complianceForm">
+      <apex:pageBlockButtons location="both">
+        <apex:commandbutton action="{!save}" value="Save"/>
+        <apex:commandbutton action="{!cancel}" value="Cancel" />
+      </apex:pageBlockButtons>
+      
+      <!-- CASE INFORMATION section begins here -->       
+      <apex:pageBlockSection title="Case Information" id="caseInformation" >        
+        <apex:inputField value="{!case.Case_Group_Assignment__c}" required="True" />  
+        <apex:pageblocksectionitem >
+          <apex:outputlabel value="Case Type" />          
+          <apex:inputField value="{!case.Type}" required="true"/>          
+        </apex:pageblocksectionitem>
+        <apex:pageblocksectionitem >          
+          <apex:outputlabel value="Discrimination Allegation" />          
+          <apex:inputField value="{!case.Discrimination_Allegation__c}" required="true"/>          
+        </apex:pageblocksectionitem>      
+        <apex:pageblocksectionitem ></apex:pageblocksectionitem>        
+        <apex:pageBlockSectionItem >          
+          <apex:outputlabel value="Source of Feedback?" />          
+          <apex:actionRegion >            
+            <apex:inputField value="{!case.Call_Source__c}" required="True" >              
+              <apex:actionSupport event="onchange" rerender="SourceInfo" status="MainStatus"/>              
+            </apex:inputField>            
+          </apex:actionRegion>          
+        </apex:pageBlockSectionItem>
+        
+        <!-- Below section displays only one item depending on the rendering condition. It is part of Case Information Section -->
+        <apex:pageBlockSection id="SourceInfo" columns="1">
+          <apex:inputField value="{!case.Agency_Name__c}" required="true" rendered="{!case.Call_Source__c == 'Agency'}"/>          
+          <apex:inputField value="{!case.AG_State__c}" required="true" rendered="{!case.Call_Source__c == 'Attorney General'}"/>          
+          <apex:inputField value="{!case.Regulatory_Case__c}" rendered="{!case.Call_Source__c == 'HUD'}"/>          
+          <apex:inputField value="{!case.State__c}" rendered="{!OR(case.Call_Source__c == 'State Department of Financial Institution',case.Call_Source__c == 'State/Local Government')}"/>                    
+          <apex:pageBlockSectionItem rendered="{!case.Call_Source__c == 'Other'}">
+            <apex:outputLabel value="Other Source of Feedback" rendered="{!case.Call_Source__c == 'Other'}">
+            </apex:outputLabel>
+            <apex:inputField value="{!case.Other_Source_of_Feedback__c}" required="{!case.Call_Source__c == 'Other'}" rendered="{!case.Call_Source__c == 'Other'}"/>            
+          </apex:pageBlockSectionItem>                    
+        </apex:pageBlockSection>
+        
+        
+        <apex:pageBlockSectionItem rendered="{!(SRDEditable)}">
+            <apex:outputlabel value="Source Received Date/Time"  />
+            <apex:define name="requiredInputDiv"> 
+                <div class="requiredInput"> 
+                    <div class="requiredBlock" style="{!IF(case.Type='Complaint','background-color:C00','background-color:transparent')}" ></div>
+                    <apex:inputField value="{!case.Source_Received_Date_Time__c}" rendered="{!SRDEditable}"/>
+                </div>
+            </apex:define>
+        </apex:pageBlockSectionItem>
+                    
+        <apex:pageBlockSectionItem rendered="{!NOT(SRDEditable)}">  
+            <apex:outputlabel value="Source Received Date/Time"  />
+            <apex:outputField value="{!case.Source_Received_Date_Time__c}" rendered="{!!SRDEditable}"/>
+        </apex:pageBlockSectionItem>
+                
+        <!--<apex:inputField value="{!case.Source_Received_Date_Time__c}"/>-->
+        <apex:pageblocksectionItem ></apex:pageblocksectionItem>
+        <apex:inputField value="{!case.Secondary_Complaint_Contact__c}"/>
+        <apex:inputField value="{!case.Tertiary_Complaint_Contact__c}"/>
+        <apex:outputField value="{!case.Special_Initiatives__c}" rendered="false" />
+      </apex:pageBlockSection>
+       
+      <!-- Spinning GIF image for Case Information Section -->
+      <apex:actionStatus id="MainStatus">
+        <apex:facet name="start">
+          <div style="text-align:center;">
+            <img src="{!$Resource.SpinIcon}"/>
+          </div>
+        </apex:facet>
+      </apex:actionStatus>
+ 
+      <!-- CLIENT INFORMATION section begins here -->        
+      <apex:outputPanel id="ClientInfoPanelForComplaint">
+        <apex:pageBlockSection title="Client Information" columns="2">
+          <apex:pageblocksectionitem >
+            <apex:outputlabel value="Is Existing Client?" />
+            <apex:actionRegion >
+              <apex:inputField value="{!case.Is_this_a_Client__c}" required="true">
+                <apex:actionSupport event="onchange" action="{!nullifyFieldsForIsThisAClientChanges}" rerender="ClientInfoPanelForComplaint,nameSearch,FunctionalArea,selectAccount" status="ClientStatus" />
+              </apex:inputField>
+            </apex:actionRegion>
+          </apex:pageBlockSectionItem>          
+        </apex:pageBlockSection>   
+        
+        <!-- Pageblocksection for Client Search button -->
+        <apex:pageblockSection rendered="{!(case.Is_this_a_Client__c='Yes')}">
+          <apex:commandButton style="margin-left:36%" immediate="true" action="{!showModalDialog}" reRender="accountSearch,nameSearch" value="Search Client"  />
+          <!-- Modal dialog box for client search -->
+          <!--<c:Modal_Dialog id="accountSearch" visible="{!assignArrangement.assignIsModalOpen}">
+            <c:SearchComponent caseReference="{!case}" invokePoint="fromCase" accountDetailsList="{!assignAccountDetails}" modalClose="{!assignArrangement}" />            
+          </c:Modal_Dialog>-->
+        </apex:pageBlockSection>
+           
+        <!-- Pageblocksection for Create Observer button -->       
+        <apex:pageblockSection rendered="{!case.Is_this_a_Client__c='No'}">
+          <apex:commandButton style="margin-left:37%" immediate="true" action="{!showCreateModalDialog}" reRender="accountCreate,nameSearch" value="Create Observer" />
+          <!-- Modal Dialog box for creating a new client -->
+          <!--<c:Modal_Dialog id="accountCreate" visible="{!createModalStatus}">
+            <c:CreateClientComponent caseReference="{!case}" sourcePage="fromCase" />
+            <div style="text-align:center">
+              <apex:commandButton immediate="true" action="{!hideCreateModalDialog}" reRender="accountCreate,nameSearch,accNoAndType,accountType,selectAccount" value="Return To Case" />
+            </div>            
+          </c:Modal_Dialog>-->
+        </apex:pageblockSection>
+        
+        <!--This section is added to bypass the client search when it is not displaying any results -->
+        <apex:outPutPanel id="ClientSectionAfterBypassingSearchClient"> 
+            <apex:outputPanel rendered="{!(assignArrangement.byPassSearchProcess && case.Is_this_a_Client__c='Yes' && case.Case_Association_Type__c!='Related Case')}">                         
+                <apex:pageBlockSection >                         
+                    <apex:pageBlockSectionItem >    
+                        <apex:outputlabel value="Bypass Client Search"/> 
+                        <apex:actionRegion >
+                            <apex:inputCheckbox value="{!case.BypassSearchProcess__c}" >
+                               <apex:actionSupport action="{!nullifyFieldsForBypassingSearchProcess}" event="onclick" rerender="ClientInfoPanelForComplaint"  status="ClientStatus"/>
+                            </apex:inputCheckbox> 
+                        </apex:actionRegion>
+                     </apex:pageblocksectionitem>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <apex:outputPanel id="FieldsOnBypassingSearchProcess">
+            <apex:outPutPanel rendered="{!case.BypassSearchProcess__c}">                            
+                <apex:pageBlockSection columns="1" >                              
+                     <apex:pageBlockSectionItem rendered="{!(case.Case_Association_Type__c='Related Case' || clientSearchByPassed='byPassClientSearch')}">
+                         <apex:outputlabel value="Bypass Client Search"/>
+                         <apex:outputField value="{!case.BypassSearchProcess__c}"/>
+                     </apex:pageBlockSectionItem>
+                     <apex:pageBlockSectionItem >
+                         <apex:outputlabel value="Reason for Bypass" rendered="{!case.Case_Association_Type__c!='Related Case'}"/>
+                         <apex:actionRegion >
+                             <apex:inputField value="{!case.Reason_for_Overriding_Search_Process__c}" required="true" rendered="{!case.Case_Association_Type__c!='Related Case'}">
+                                 <apex:actionSupport event="onchange" rerender="CINField"  status="ClientStatus"/>
+                             </apex:inputField>
+                         </apex:actionRegion>
+                     </apex:pageBlockSectionItem>
+                     <apex:pageblockSectionItem rendered="{!case.Case_Association_Type__c='Related Case'}">
+                         <apex:outputlabel value="Reason for Bypass" rendered="{!case.Case_Association_Type__c='Related Case'}"/>
+                         <apex:outputField value="{!case.Reason_for_Overriding_Search_Process__c}" rendered="{!case.Case_Association_Type__c='Related Case'}"/> 
+                     </apex:pageblockSectionItem>
+                 </apex:pageBlockSection>
+                 <apex:pageBlockSection id="CINField" columns="1">                              
+                     <apex:inputField value="{!case.CIN__c}" rendered="{!case.Case_Association_Type__c!='Related Case' && case.Reason_for_Overriding_Search_Process__c='System Not Available'}"/>
+                     <apex:outputField value="{!case.CIN__c}" rendered="{!case.Case_Association_Type__c='Related Case' && case.Reason_for_Overriding_Search_Process__c='System Not Available' && case.CIN__c!=Null}"/> 
+                 </apex:pageBlockSection>
+                 <apex:pageBlockSection columns="1">
+                     <apex:inputField value="{!case.Contact_Name__c}" required="true" rendered="{!case.Case_Association_Type__c!='Related Case'}"/>
+                     <apex:outputField value="{!case.Contact_Name__c}" rendered="{!case.Case_Association_Type__c='Related Case'}"/>
+                     <apex:inputField value="{!case.Contact_Phone__c}" required="true" rendered="{!case.Case_Association_Type__c!='Related Case'}"/>
+                     <apex:outputField value="{!case.Contact_Phone__c}" rendered="{!case.Case_Association_Type__c='Related Case'}"/>
+                     <apex:inputField value="{!case.Is_This_A_Private_Wealth_Client__c}" required="true" rendered="{!case.Case_Association_Type__c!='Related Case'}"/> 
+                     <apex:outputField value="{!case.Is_This_A_Private_Wealth_Client__c}" rendered="{!case.Case_Association_Type__c='Related Case'}"/>
+                     <apex:inputField value="{!case.Is_this_a_Wholesale_Client__c}" required="true" rendered="{!case.Case_Association_Type__c!='Related Case'}"/> 
+                     <apex:outputField value="{!case.Is_this_a_Wholesale_Client__c}" rendered="{!case.Case_Association_Type__c='Related Case'}"/>                             
+                     <apex:pageBlockSectionItem >
+                         <apex:outputlabel value="Account Type"/>
+                         <apex:actionRegion >
+                             <apex:inputField value="{!case.Account_Type__c}" required="true">
+                                 <apex:actionSupport event="onchange" reRender="accTypeDetail,AlternateAddress" status="AccountTypeStatus" action="{!defaultAccountTypeDetailField}"/>
+                             </apex:inputField>
+                         </apex:actionRegion>
+                     </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection id="AccountNumber">
+                    <apex:inputField id="AccountNumber" value="{!case.Account_Number__c}" required="{!case.Account_Type__c!="Treasury & Payment Solutions" && case.Account_Type__c!="Wholesale Other"}"/> 
+                </apex:pageBlockSection>
+                <apex:pageBlockSection id="accTypeDetail" columns="1">
+                    <apex:inputField value="{!case.Account_Type_Detail__c}" rendered="{!case.Account_Type__c='Private Wealth Mgmt' || case.Account_Type__c = 'Credit Card' || case.Account_Type__c = 'Credit card' || case.Account_Type__c = 'Wholesale Other'}" required="true"/>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection >
+                    <apex:inputField value="{!case.Is_This_Relationship_Managed_By_SAD__c}" />
+                    <apex:inputField value="{!case.Functional_Role__c}" /> 
+                </apex:pageBlockSection>
+            </apex:outputPanel>                    
+        </apex:outPutPanel>      
+      </apex:outputPanel>
+      
+      <!--This section is added to display inforamtion after client search -->
+      <apex:outputPanel id="nameSearch" >
+        <apex:pageblockSection columns="2" rendered="{!case.CIN__c!=Null && !case.BypassSearchProcess__c}">
+          <!--Start changes for CMI 2016 April release.Client Name is displayed as a link to open the Related Account Record-->
+          <apex:pageBlockSectionItem rendered="{!(case.Client_Name__c!=Null &&  source!='InsideSalesforce')}">
+            <apex:outputLabel value="Client Name"/>
+            <apex:actionRegion >                                                                                                    
+                <apex:commandLink status="LOBDetailStatus" value="{!case.Client_Name__c}" action="{!redirectToAccount}" immediate="true" target="_blank"/>                                                                                   
+            </apex:actionRegion>
+          </apex:pageBlockSectionItem>
+          <!--End changes for CMI 2016 April release-->
+          <apex:outputField value="{!case.CIN__c}" rendered="{!case.CIN__c!=Null }" />
+          <!--<apex:outputField rendered="{!(case.HH_Info__c!=Null && case.HH_Info__c!='')}" value="{!case.HH_Info__c}" />-->
+          <apex:outputField rendered="{!(case.Client_Servicing_Code__c!=Null && case.Client_Servicing_Code__c!='')}" value="{!case.Client_Servicing_Code__c}" />
+          <!--<apex:outputField rendered="{!(case.Client_Segmentation_Code__c!=Null && case.Client_Segmentation_Code__c!='')}" value="{!case.Client_Segmentation_Code__c}" />-->
+          <apex:outputField rendered="{!(case.Client_Contact_Number__c!=Null && case.Client_Contact_Number__c!='')}" value="{!case.Client_Contact_Number__c}" />
+          <apex:outputField rendered="{!(case.Contact_Address__c!=Null && case.Contact_Address__c!='')}" value="{!case.Contact_Address__c}" />
+          <apex:outputField rendered="{!(case.Client_Email__c!=Null && case.Client_Email__c!='')}" value="{!case.Client_Email__c}" />                    
+        </apex:pageBlockSection> 
+        <apex:pageblocksection columns="1" id="selectAccount" rendered="{!case.CIN__c!=Null}">          
+          <apex:pageBlockSectionItem rendered="{!case.Client_Name__c!=Null && case.Is_this_a_Client__c='Yes'}">
+            <apex:outputLabel value="Select Account" for="accts" rendered="{!case.Client_Name__c!=Null && case.Is_this_a_Client__c='Yes'}" />
+            <apex:define name="requiredSelectAccount">
+              <div class="requiredInput">
+                <div class="requiredBlock">
+                </div>
+                <apex:actionRegion >
+                  <apex:selectList id="accts" value="{!selectedAccountInformation}" required="True" size="1" title="Account" rendered="{!(case.Client_Name__c!=Null && case.Is_this_a_Client__c='Yes')}">
+                    <apex:actionSupport event="onchange" action="{!storeSelectedAccountDetails}" status="ClientStatus" reRender="selectAccountModal,accountDetailsAdded,renderAccountDetails" />
+                    <apex:selectOptions value="{!accountsList}">
+                    </apex:selectOptions>
+                  </apex:selectList>
+                </apex:actionRegion>
+              </div>
+            </apex:define>
+          </apex:pageBlockSectionItem>
+          <c:Modal_Dialog id="selectAccountModal" visible="{!assignArrangement.assignIsAccountModalOpen}" width="35%" left="35%" height="85%">
+            <c:SelectAccountComponent caseReference="{!case}" modalStatus="{!assignArrangement}" />            
+          </c:Modal_Dialog> 
+        </apex:pageblocksection>        
+       
+        <apex:outPutPanel id="renderAccountDetails">          
+          <apex:outPutPanel rendered="{!case.CIN__c!=Null && NOT(case.BypassSearchProcess__c)}" >            
+            <apex:pageblockSection columns="2">              
+              <!--Start changes for CMI 2016 June Release.If STProduct is present for the Selected AccountNumber,AccountNumber displays as a link which redirects to STProduct-->                        
+                <apex:pageBlockSectionItem rendered="{!(stProductId!=null && stProductId!='' && case.Is_this_a_Client__c='Yes' && selectedAccountInformation!='Other' && case.Account_Number__c!=Null && case.CIN__c!=Null)}">
+                    <apex:outputLabel value="Account Number"/>
+                    <apex:actionRegion >                                                                                                    
+                        <apex:commandLink status="LOBDetailStatus" value="{!case.Account_Number__c}" action="{!redirectToSTProduct}" immediate="true" target="_blank"/>                                                                                   
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                <apex:outputfield value="{!case.Account_Number__c}" rendered="{!(OR(stProductId=null,stProductId="") && case.Is_this_a_Client__c="Yes" && selectedAccountInformation!='Other' && case.Account_Number__c!=Null && case.CIN__c!=Null)}" />
+              <!--End changes for CMI 2016 June Release.-->
+              <apex:outputField value="{!case.Account_Type__c}" rendered="{!(case.Is_this_a_Client__c='Yes' && selectedAccountInformation!='Other' && case.Account_Type__c!=Null && case.CIN__c!=Null)}"/>              
+              <apex:inputField value="{!case.Account_Number__c}" rendered="{!selectedAccountInformation='Other' && case.Is_this_a_Client__c='Yes'}" required="true"/>              
+              <apex:pageblocksectionitem rendered="{!selectedAccountInformation='Other' && case.Is_this_a_Client__c='Yes'}">
+                <apex:outputlabel value="Account Type" />
+                <apex:actionRegion >                  
+                  <apex:inputField value="{!case.Account_Type__c}" required="{!(case.Is_this_a_Client__c='Yes')}" rendered="{!selectedAccountInformation='Other' && case.Is_this_a_Client__c='Yes'}">
+                    <apex:actionSupport event="onchange" rerender="AccountDetail,acctTypeInputHidden" status="ClientStatus" action="{!defaultAccountTypeDetailField}"/>
+                  </apex:inputField>
+                </apex:actionRegion>
+              </apex:pageblocksectionitem>
+            </apex:pageblockSection>
+            <apex:pageBlockSection id="AccountDetail" >
+              <apex:pageblockSectionItem rendered="{!(case.Is_this_a_Client__c='Yes' && selectedAccountInformation='Other' && (case.Account_Type__c='Consumer Loan' ||  case.Account_Type__c='Private Wealth Mgmt') && case.CIN__c!=Null)}"></apex:pageblockSectionItem>
+              <!--For CMI 2015 fixes, account type consumer loan and Credit card are removed from the below condition-->
+              <apex:inputField value="{!case.Account_Type_Detail__c}" required="true" rendered="{!(case.Is_this_a_Client__c='Yes' && (case.Account_Type__c='Private Wealth Mgmt' ||  case.Account_Type__c='Credit Card') && case.CIN__c!=Null && selectedAccountInformation='Other')}" />              
+              <apex:outputField value="{!case.Account_Type_Detail__c}" rendered="{!(case.Is_this_a_Client__c='Yes' && (case.Account_Type__c='Private Wealth Mgmt' ||  case.Account_Type__c='Credit Card') && case.CIN__c!=Null && case.Account_Type_Detail__c!=Null && selectedAccountInformation!='Other' && NOT(comingAfterCreatingClient))}" />
+              <!--For CMI 2015 fixes, the below account type detail field is added-->
+              <apex:pageBlockSectionItem rendered="{!((case.Account_Type__c = 'Credit card' || case.Account_Type__c = 'Consumer Loan' ) && case.CIN__c!=Null)}">
+                    <apex:outputLabel value="Account type detail" />
+                    <apex:define name="requiredSelectAccount">
+                        <div class="requiredInput">
+                            <div class="requiredBlock"></div>
+                            <apex:selectList size="1" value="{!case.Account_Type_Detail__c}" >
+                                <apex:selectOptions value="{!acctTypeDetailFieldValue}"/>                                                    
+                            </apex:selectList>
+                        </div>
+                    </apex:define> 
+                </apex:pageBlockSectionItem> 
+            </apex:pageBlockSection>
+          </apex:outPutPanel>
+        </apex:outPutPanel>               
+      </apex:outputPanel>
+      <!--nameSearch Block ends here-->
+      
+      <apex:pageBlockSection id="FunctionalArea">
+        <apex:inputField value="{!case.Functional_Area__c}" required="true" rendered="{!case.Is_this_a_Client__c='Yes'}" />
+      </apex:pageBlockSection>
+            
+      <!-- Authorized Third Party related fields -->
+      <apex:pageBlockSection id="authThirdParty" columns="2">
+        <apex:pageBlockSectionItem >
+          <apex:outputlabel value="Is This An Authorized Third Party" />
+          <apex:actionRegion >
+            <apex:inputField value="{!case.Is_This_An_Authorized_Third_Party__c}" required="true">
+              <apex:actionSupport event="onchange"  reRender="authThirdParty" status="ClientStatus"/>
+            </apex:inputField>
+          </apex:actionRegion>
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem >
+        </apex:pageBlockSectionItem>
+        <apex:inputField required="true" value="{!case.Contact_Name__c}" rendered="{!AND(OR(case.Is_This_An_Authorized_Third_Party__c = 'Yes',case.Business_or_Personal__c = 'Business'),NOT(case.BypassSearchProcess__c))}" />
+        <apex:inputField rendered="{!AND(OR(case.Is_This_An_Authorized_Third_Party__c = 'Yes',case.Business_or_Personal__c = 'Business'),NOT(case.BypassSearchProcess__c))}" value="{!case.Contact_Phone__c}" />
+      </apex:pageBlockSection>
+      <apex:pageBlockSection id="clientAdditionalDetails">        
+        <apex:inputField value="{!case.Company__c}" required="true"/>
+        <apex:inputField value="{!case.STI_LOB__c}" required="true"/>
+        <apex:inputField value="{!case.STI_Channel__c}" />
+        <apex:inputField value="{!case.Due_Date__c}" required="true" />
+        <apex:inputField value="{!case.Response_Date__c}" />
+        <apex:inputField value="{!case.Client_Has_An_Attorney__c}" />
+      </apex:pageBlockSection>
+      <!--Start changes for CMI 2015 Iteration 2 -->
+      <apex:actionRegion >
+          <apex:pageBlockSection id="litigationFields"> 
+            <apex:pageBlockSectionItem >            
+                <apex:outputLabel value="{!$ObjectType.Case.fields.Litigation__c.label}"/>                
+                <apex:inputField value="{!case.Litigation__c}">
+                    <apex:actionSupport event="onchange" rerender="litigationFields" action="{!nullifyValuesOnLitigationChange}"/>
+                </apex:inputField>                
+            </apex:pageBlockSectionItem>
+            <apex:pageBlockSectionItem >
+                <apex:outputLabel value="{!$ObjectType.Case.fields.Legal_Resource__c.label}"></apex:outputLabel>
+                <apex:define name="requiredLegalResource">
+                    <div class="requiredInput">
+                        <div class="requiredBlock" style="{!IF(case.Litigation__c == 'Yes' &&($ObjectType.Case.fields.Legal_Resource__c.Updateable) ,'background-color:C00','background-color:transparent')}"></div>                                         
+                        <apex:inputField value="{!case.Legal_Resource__c}"/>
+                    </div>
+                </apex:define>
+            </apex:pageBlockSectionItem>
+            <apex:pageBlockSectionItem >
+                <apex:outputLabel value="{!$ObjectType.Case.fields.Legal_Reference__c.label}"></apex:outputLabel>
+                <apex:define name="requiredLegalRef">
+                    <div class="requiredInput">
+                        <div class="requiredBlock" style="{!IF(case.Litigation__c == 'Yes' &&($ObjectType.Case.fields.Legal_Reference__c.Updateable) ,'background-color:C00','background-color:transparent')}"></div>                                         
+                        <apex:inputField value="{!case.Legal_Reference__c}"/>
+                    </div>
+                </apex:define>
+            </apex:pageBlockSectionItem>        
+          </apex:pageBlockSection>
+      </apex:actionRegion>
+      <!--End changes for CMI 2015 Iteration 2 -->
+      <apex:pageBlockSection >
+        <apex:inputField value="{!case.STM_STB_Counsel_Contact__c}" />
+        <apex:inputField value="{!case.External_Counsel_Contact__c}" />
+        <apex:inputField value="{!case.DOJ__c}" />
+        <apex:inputField value="{!case.Referral__c}" />              
+      </apex:pageBlockSection>
+            
+      <!-- Spinning GIF image for Client Information Section --> 
+      <apex:actionStatus id="ClientStatus">
+        <apex:facet name="start">
+          <div style="text-align:center;">
+            <img src="{!$Resource.SpinIcon}" />
+          </div>
+        </apex:facet>
+      </apex:actionStatus>
+      
+      
+      <!-- CLIENT FEEDBACK DETAILS section begins here --> 
+      <apex:pageBlocksection title="Client Feedback Details" columns="1">        
+        <apex:pageBlockSectionItem >          
+          <apex:outputLabel value="Client Feedback"/>
+          <apex:define name="requiredClientFeedback">
+            <div class="requiredInput">
+              <div class="requiredBlock">
+              </div>
+              <apex:inputTextArea value="{!case.Description}" cols="80" rows="7"/>
+            </div>
+          </apex:define>
+        </apex:pageBlockSectionItem>
+      </apex:pageBlocksection>
+      
+      <!--The below output panel is added for CMI 2015 Iteration 2 as it should render for old cases only-->
+      <apex:outputpanel rendered="{!case.CreatedDate<rel2DeploymentDateValue}">
+
+          <!-- Reg/Law field controlling field section, A picklist with value 'Yes/No' -->
+          <apex:pageBlockSection id="Quest2DependentQuestions" columns="1" >
+            <apex:pageBlockSectionItem >
+              <apex:outputLabel value="Reg/Law Cited?" for="quest3"/>
+              <apex:define name="requiredQ2A">
+                <div class="requiredInput">
+                  <div class="requiredBlock">
+                  </div>
+                  <apex:actionRegion >
+                    <apex:inputField value="{!case.PCQ_Q2_A__c}" id="quest3">                  
+                      <apex:actionSupport event="onchange" action="{!nullifyFieldsForCEQuest2Changes}" rerender="Quest2ADependentQuestions" status="FeedbackCategoryStatus" />
+                    </apex:inputField>
+                  </apex:actionRegion>
+                </div>            
+              </apex:define>
+            </apex:pageBlockSectionItem>
+          </apex:pageBlockSection>
+          
+          <!-- Reg/Law dependent field section -->
+          <apex:pageBlockSection id="Quest2ADependentQuestions" columns="1" >
+            <apex:pageBlockSectionItem rendered="{!case.PCQ_Q2_A__c='Yes'}">
+              <apex:outputLabel value="Law or Regulation Cited?" for="quest4" rendered="{!case.PCQ_Q2_A__c='Yes'}"/>          
+              <apex:define name="requiredLawOrReg">
+                <div class="requiredInput">
+                  <div class="requiredBlock">
+                  </div>
+                  <apex:actionRegion >
+                    <apex:inputField value="{!case.Law_or_Regulation_Violated__c}" id="quest4" rendered="{!case.PCQ_Q2_A__c='Yes'}">
+                      <apex:actionSupport event="onchange" action="{!nullifyFieldsForCEQuest2Changes}" rerender="Quest2ADependentQuestions" status="FeedbackCategoryStatus" />
+                    </apex:inputField>                
+                  </apex:actionRegion>
+                </div>
+              </apex:define>
+            </apex:pageBlockSectionItem>
+            <apex:pageBlockSectionItem >
+              <apex:outputLabel value="Other Regulation or Law?" for="quest5" rendered="{!(case.PCQ_Q2_A__c='Yes' && CONTAINS(case.Law_or_Regulation_Violated__c,'Other'))}"/>          
+              <apex:inputField value="{!case.Other_Regulation_Law__c}" id="quest5" rendered="{!(case.PCQ_Q2_A__c='Yes' && CONTAINS(case.Law_or_Regulation_Violated__c,'Other'))}" required="true"/>          
+            </apex:pageBlockSectionItem>        
+          </apex:pageBlockSection>
+          
+          <!-- High Risk Terms controlling field section, A picklist with value 'Yes/No' -->
+          <apex:pageBlockSection id="Question2DependentQuestions" columns="1" >
+            <apex:pageBlockSectionItem >
+              <apex:outputLabel value="Are There High Risk Terms?" for="quest6"/>
+              <apex:define name="requiredQ2B">
+                <div class="requiredInput">
+                  <div class="requiredBlock">
+                  </div>
+                  <apex:actionRegion >                
+                    <apex:inputField value="{!case.PCQ_Q2_B__c}" id="quest6">
+                      <apex:actionSupport event="onchange" action="{!nullifyFieldsForCEQuest2BChanges}" rerender="Question2BDependentQuestions" status="FeedbackCategoryStatus" />
+                    </apex:inputField>
+                  </apex:actionRegion>
+                </div>
+              </apex:define>          
+            </apex:pageBlockSectionItem>
+          </apex:pageBlockSection>
+          
+          <!-- High Risk Terms Dependent field section -->
+          <apex:pageBlockSection id="Question2BDependentQuestions" columns="1" >
+            <apex:pageBlockSectionItem rendered="{!case.PCQ_Q2_B__c='Yes'}" helptext="Previously 'High Risk Terms'">
+              <apex:outputLabel value="Select specific Complaint Indicator Terms" for="quest7" rendered="{!case.PCQ_Q2_B__c='Yes'}"/>          
+              <apex:define name="requiredHighRisk">
+                <div class="requiredInput">
+                  <div class="requiredBlock">
+                  </div>
+                  <apex:actionRegion >
+                    <apex:inputField value="{!case.High_Risk_Terms__c}" id="quest7" rendered="{!case.PCQ_Q2_B__c='Yes'}">
+                      <apex:actionSupport event="onchange" action="{!nullifyFieldsForCEQuest2BChanges}" rerender="Question2BDependentQuestions" status="FeedbackCategoryStatus" />
+                    </apex:inputField>                
+                  </apex:actionRegion>
+                </div>
+              </apex:define>
+            </apex:pageBlockSectionItem>
+            <apex:pageBlockSectionItem >
+              <apex:outputLabel value="Other Complaint Indicator Terms" for="quest8" rendered="{!(case.PCQ_Q2_B__c='Yes' && CONTAINS(case.High_Risk_Terms__c,'Other') && renderOtherHighRiskTerms ) }"/>          
+              <apex:inputField value="{!case.Other_High_Risk_Terms__c}" id="quest8" rendered="{!(case.PCQ_Q2_B__c='Yes' && CONTAINS(case.High_Risk_Terms__c,'Other') && renderOtherHighRiskTerms )}" required="true"/>          
+            </apex:pageBlockSectionItem>        
+          </apex:pageBlockSection>
+      </apex:outputPanel>      
+      
+      <!--Start changes for CMI 2015 Iteration 2-->     
+      <!-- Reg/Law dependent field section -->
+      <apex:outputPanel rendered = "{!case.CreatedDate>rel2DeploymentDateValue}">
+          <apex:pageBlockSection id="Quest2ADependentQuestionsSection2" columns="1" >
+            <apex:pageBlockSectionItem >
+              <apex:outputLabel value="Law or Regulation Cited?" for="quest4"/>          
+              <apex:define name="requiredLawOrReg">
+                <div class="requiredInput">
+                  <div class="requiredBlock">
+                  </div>
+                  <apex:actionRegion >
+                    <apex:inputField value="{!case.Law_or_Regulation_Violated__c}" id="quest4">
+                      <apex:actionSupport event="onchange" action="{!nullifyFieldsForCEQuest2Changes}" rerender="Quest2ADependentQuestionsSection2" status="FeedbackCategoryStatus" />
+                    </apex:inputField>                
+                  </apex:actionRegion>
+                </div>
+              </apex:define>
+            </apex:pageBlockSectionItem>
+            <apex:pageBlockSectionItem >
+              <apex:outputLabel value="Other Regulation or Law?" for="quest5" rendered="{!(case.Law_or_Regulation_Violated__c != null && CONTAINS(case.Law_or_Regulation_Violated__c,'Other'))}"/>          
+              <apex:inputField value="{!case.Other_Regulation_Law__c}" id="quest5" rendered="{!(case.Law_or_Regulation_Violated__c != null && CONTAINS(case.Law_or_Regulation_Violated__c,'Other'))}" required="true"/>          
+            </apex:pageBlockSectionItem>        
+          </apex:pageBlockSection>
+          
+          <!-- High Risk Terms Dependent field section -->
+          <apex:pageBlockSection id="Question2BDependentQuestionsSection2" columns="1" >
+              <apex:pageBlockSectionItem helptext="Previously 'High Risk Terms'">
+              <apex:outputLabel value="Select specific Complaint Indicator Terms" for="quest7"/>          
+              <apex:define name="requiredHighRisk">
+                <div class="requiredInput">
+                  <div class="requiredBlock">
+                  </div>
+                  <apex:actionRegion >
+                    <apex:inputField value="{!case.High_Risk_Terms__c}" id="quest7">
+                      <apex:actionSupport event="onchange" action="{!nullifyFieldsForCEQuest2BChanges}" rerender="Question2BDependentQuestionsSection2" status="FeedbackCategoryStatus" />
+                    </apex:inputField>                
+                  </apex:actionRegion>
+                </div>
+              </apex:define>
+            </apex:pageBlockSectionItem>
+            <apex:pageBlockSectionItem >
+              <apex:outputLabel value="Other Complaint Indicator Terms" for="quest8" rendered="{!(renderOtherHighRiskTerms )}"/>          
+              <apex:inputField value="{!case.Other_High_Risk_Terms__c}" id="quest8" rendered="{!(renderOtherHighRiskTerms )}" required="true"/>          
+            </apex:pageBlockSectionItem>        
+          </apex:pageBlockSection>
+      </apex:outputPanel>
+      
+      <apex:outputPanel id="MTGCatLevel4And5">
+        <apex:pageBlockSection columns="1" id="catButton"> 
+            
+            <!--Start changes for CMI 2016 July Release.Filtering of Categories using Search Text implemented-->
+            <apex:pageBlockSectionItem id="catButton1">
+                <apex:outputLabel value="Search Category"/>
+                <apex:actionRegion >                              
+                    <apex:inputText value="{!searchTextValue}" onkeypress="return noenter(event);"/>
+                    <apex:commandButton value="Search" action="{!categorySearch}"  rerender="MTGCatLevel4And5" status="FeedbackCategoryStatus" id="catSearchButton" />
+                    <apex:outputText value="To re-display all values, clear out the value entered and select Search again." rendered="{!searchTextValue != null}" style="color:red;font-weight:bold;"/>
+                </apex:actionRegion>
+            </apex:pageBlockSectionItem>
+            <!--End changes for CMI 2016 July Release-->
+                                
+            <!--Start changes for CMI 2016 June release-->
+            <apex:pageBlockSectionItem >
+                <apex:outputLabel value="Cat Level 3"/>
+                
+                <apex:define name="requiredSubmitterCategory">
+                    <div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    
+                    <apex:actionRegion >
+                        <apex:selectList id="PicklistValueForLevel3" value="{!Level3Choice}" multiselect="False" size="10" style="width:40%">
+                            <apex:selectOptions value="{!SubmitterLevel3Choices}"></apex:selectOptions>
+                            <apex:actionSupport event="onchange" action="{!updateLists}" rerender="MTGCatLevel4And5" status="FeedbackCategoryStatus"/>
+                        </apex:selectList>
+                    </apex:actionRegion>
+                    </div>
+                </apex:define>
+            </apex:pageBlockSectionItem>
+            <!--End changes for CMI 2016 June release-->
+            
+          <!-- This below section displays all Cat level 4 values applicable to C&R Record Type -->           
+          <apex:pageBlockSectionItem >
+            <apex:outputLabel value="Cat Level 4"/>            
+            <apex:define name="requiredSubmitterCategory">
+              <div class="requiredInput">
+                <div class="requiredBlock">
+                </div>                
+                <apex:actionRegion >
+                  <apex:selectList id="PicklistValueForPrimaryIssues" value="{!Level4Choice}" multiselect="False" size="10" style="width:40%">
+                    <apex:selectOptions value="{!SubmitterLevel4Choices}">
+                    </apex:selectOptions>
+                    <apex:actionSupport event="onchange" action="{!updateLists}" rerender="MTGCatLevel4And5" status="FeedbackCategoryStatus" />
+                  </apex:selectList>
+                </apex:actionRegion>
+              </div>
+            </apex:define>
+          </apex:pageBlockSectionItem>
+                   
+          <!-- This below section displays all Cat level 5 values applicable to C&R Record Type -->   
+          <apex:pageBlockSectionItem >
+            <apex:outputLabel value="Cat Level 5"/>            
+            <apex:define name="requiredSubmitterSubCategory">
+              <div class="requiredInput">
+                <div class="requiredBlock">
+                </div>                
+                <apex:actionRegion >
+                  <apex:selectList id="PicklistValueForPrimaryIssuesDetail" value="{!Level5Choice}" multiselect="False" size="10" style="width:40%">
+                    <apex:selectOptions value="{!SubmitterLevel5Choices}">
+                    </apex:selectOptions>
+                    <apex:actionSupport event="onchange" action="{!updateLists}" rerender="MTGCatLevel4And5" status="FeedbackCategoryStatus"/>
+                  </apex:selectList>
+                </apex:actionRegion>
+              </div>
+            </apex:define>
+          </apex:pageBlockSectionItem>
+
+          <!-- Spinning icon GIF Image for Client Feedback Section -->
+          <apex:actionStatus id="FeedbackCategoryStatus">
+            <apex:facet name="start">
+              <div style="text-align:center;">
+                <img src="{!$Resource.SpinIcon}"/>
+              </div>
+            </apex:facet>
+          </apex:actionStatus>          
+        </apex:pageBlocksection>
+      </apex:outputPanel>
+      
+      <!-- CLOSE CASE DETAILS section begins here -->
+      <apex:pageblockSection title="Close Case Details" columns="1">
+        <apex:inputTextarea value="{!case.Resolution_Comments__c}" cols="80" rows="7" />
+      </apex:pageblockSection>
+      
+      
+      <!-- Changes for cmi iteation 2 sprint 1 2015 section rendering as other record types-->
+      <apex:outputPanel id="reliefAmount">
+          <apex:pageBlockSection rendered="{!case.Refund__c='Monetary Relief'}">
+            <!--The below pageblocksectionitem is added for CMI 2014 Release 3 Warranty fixes-->
+            <apex:pageBlockSectionItem helpText="Enter the dollar amount provided for remediation/relief.">
+                <apex:outputLabel value="Remediation/Relief Amount"></apex:outputLabel>
+                <apex:inputField value="{!case.Remediation__c}" required="true"/>
+            </apex:pageBlockSectionItem>
+            </apex:pageblockSection>
+     </apex:outputPanel>   
+        
+      <!--Start changes form CMI 2015 Iteration2-->
+      <apex:pageblockSection id="refund" columns="1">
+          <apex:pageblocksectionitem >
+              <apex:outputlabel value="Relief Provided?"/>
+              <apex:actionRegion > 
+                    <apex:inputField value="{!case.Refund__c}"> 
+                        <apex:actionSupport event="onchange" reRender="refund,reliefAmount" status="reliefStatus"/> 
+                    </apex:inputField> 
+              </apex:actionRegion> 
+           </apex:pageblocksectionitem>
+           <apex:inputField value="{!case.Type_of_Refund__c}" rendered="{!case.Refund__c='Monetary Relief'}" required="true"/>
+           <apex:inputField value="{!case.Type_of_Refund__c}" rendered="{!case.Refund__c='Non-Monetary Relief'}" required="true"/>
+       </apex:pageblockSection>
+       <!--End changes form CMI 2015 Iteration2-->
+       <apex:actionStatus id="reliefStatus">
+        <apex:facet name="start">
+          <div style="text-align:center;">
+            <img src="{!$Resource.SpinIcon}"/>
+          </div>
+        </apex:facet>
+       </apex:actionStatus>
+       <apex:pageblockSection columns="1">
+        <apex:inputField value="{!case.C_L_Investigation_Disposition__c}"/>
+        <apex:inputField value="{!case.C_L_Investigation_Comments__c}" style="width:300px;height:45px" />
+        <!--<apex:inputField value="{!case.Reg_Law_Potential_Exception__c}"/>-->
+        <apex:inputField value="{!case.Status}" required="true" />
+        <apex:inputField value="{!case.Status_Reason__c}" required="true" />        
+      </apex:pageblockSection>
+      
+
+        <!-- Compliance Evaluation Summary section begins here -->
+        <apex:pageBlockSection id="ComplianceEvaluationSummary" title="Compliance Evaluation Summary" columns="1">        
+            <apex:pageBlockSection >
+                <apex:inputField value="{!case.CL_Exception_Review_Disposition__c}" />
+                <apex:inputField value="{!case.CL_Exception_Review_Comments__c}" style="width:300px;height:45px" />
+            </apex:pageBlockSection>        
+            
+            <apex:actionRegion >    
+                    <apex:pageBlockSection id="depositInvestigation" columns="2">                        
+                        <apex:pageBlockSectionItem helptext="Privacy, Reg CC, Reg D, Reg E"> 
+                            <apex:outputLabel value="Deposit/Others Investigation Disposition"/>
+                             <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF((case.Deposit_Others_C_L_Disposition__c='Investigation Required'||case.Deposit_Others_C_L_Disposition__c='Pending Review')&& $ObjectType.Case.fields.Deposit_Others_Investigation_Disposition__c.Updateable,'background-color:C00','background-color:transparent')}"></div>                                                                        
+                                            <apex:inputField value="{!case.Deposit_Others_Investigation_Disposition__c}" >
+                                                <apex:actionSupport event="onchange" reRender="depositInvestigation,RegLaw,RegLawLabel" status="RegLawStatus1"/>
+                                            </apex:inputField>                            
+                                        </div>
+                                    </apex:define>
+                        </apex:pageBlockSectionItem>                        
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Deposit/Others Investigation Comments"/>                   
+                        <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF(OR(case.Deposit_Others_C_L_Disposition__c='Investigation Required',case.Deposit_Others_C_L_Disposition__c='Pending Review',case.Deposit_Others_Investigation_Disposition__c='Exception'),'background-color:C00','background-color:transparent')}"></div>       
+                                        <apex:inputField value="{!case.Deposits_Other_Investigation_Comments__c}" style="width:300px;height:45px" />
+                                  </div>
+                                </apex:define>
+                        </apex:pageBlockSectionItem> 
+                    </apex:pageBlockSection>
+                    
+                                        
+                    <apex:pageBlockSection id="fairBankingInvestigation" columns="2">                        
+                        <apex:pageBlockSectionItem helptext="UDAAP,ECOA,FHA,CRA"> 
+                            <apex:outputLabel value="Fair Banking Investigation Disposition"/>
+                            <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF((case.Fair_Banking_C_L_Disposition__c='Investigation Required' || case.Fair_Banking_C_L_Disposition__c='Pending Review')&&($ObjectType.Case.fields.Fair_Banking_Investigation_Disposition__c.Updateable),'background-color:C00','background-color:transparent')}"></div>                          
+                            
+                                <apex:inputField value="{!case.Fair_Banking_Investigation_Disposition__c}">
+                                    <apex:actionSupport event="onchange" reRender="fairBankingInvestigation,RegLaw,RegLawLabel" status="RegLawStatus1"/>
+                                </apex:inputField>
+                                </div>
+                                </apex:define>
+                            
+                        </apex:pageBlockSectionItem>                        
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Fair Banking Investigation Comments"/>                   
+                            <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF(case.Fair_Banking_C_L_Disposition__c='Investigation Required'||case.Fair_Banking_C_L_Disposition__c='Pending Review'||case.Fair_Banking_Investigation_Disposition__c='Exception','background-color:C00','background-color:transparent')}"></div>       
+                                        <apex:inputField value="{!case.Fair_Banking_Investigation_Comments__c}" style="width:300px;height:45px" />
+                                  </div>
+                            </apex:define>
+                        </apex:pageBlockSectionItem> 
+                    </apex:pageBlockSection>
+                    
+                    <apex:actionStatus id="RegLawStatus1">
+                        <apex:facet name="start">
+                            <div style="text-align:center;">
+                                <img src="{!$Resource.SpinIcon}"/>
+                            </div>
+                        </apex:facet>
+                    </apex:actionStatus>    
+                                         
+                    <apex:pageBlockSection id="fairCreditInvestigation" columns="2">                        
+                        <apex:pageBlockSectionItem helptext="Reg V(Bureau), Adverse Action, Permissible Purpose, Risk Pricing, ID Theft Protection"> 
+                            <apex:outputLabel value="Fair Credit Investigation Disposition"/>
+                            <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF((case.Fair_Credit_C_L_Disposition__c='Investigation Required'||case.Fair_Credit_C_L_Disposition__c='Pending Review')&& $ObjectType.Case.fields.Fair_Credit_Investigation_Disposition__c.Updateable,'background-color:C00','background-color:transparent')}"></div>                                                                                 
+                            
+                                            <apex:inputField value="{!case.Fair_Credit_Investigation_Disposition__c}" >
+                                                <apex:actionSupport event="onchange" reRender="fairCreditInvestigation,RegLaw,RegLawLabel" status="RegLawStatus2"/>
+                                            </apex:inputField>
+                            
+                                        </div>
+                            </apex:define>                   
+                        </apex:pageBlockSectionItem>                        
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Fair Credit Investigation Comments"/>                   
+                        <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF(OR(case.Fair_Credit_C_L_Disposition__c='Investigation Required',case.Fair_Credit_C_L_Disposition__c='Pending Review',case.Fair_Credit_Investigation_Disposition__c='Exception'),'background-color:C00','background-color:transparent')}"></div>       
+                                        <apex:inputField value="{!case.Fair_Credit_Investigation_Comments__c}" style="width:300px;height:45px" />
+                                  </div>
+                                </apex:define>
+                        </apex:pageBlockSectionItem> 
+                    </apex:pageBlockSection>
+                                    
+                    <apex:pageBlockSection id="lendingSavingsInvestigation" columns="2">                        
+                        <apex:pageBlockSectionItem helpText="TILA/Reg Z, Reg Z, High Cost Testing, TISA/Reg DD, Predatory Lending, RESPA, Rescission"> 
+                            <apex:outputLabel value="Lending/Saving Investigation Disposition"/>
+                             <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF((case.Lending_Savings_C_L_Disposition__c='Investigation Required'||case.Lending_Savings_C_L_Disposition__c='Pending Review')&& $ObjectType.Case.fields.Lending_Saving_Investigation_Disposition__c.Updateable,'background-color:C00','background-color:transparent')}"></div>                                                                                 
+                            
+                                            <apex:inputField value="{!case.Lending_Saving_Investigation_Disposition__c}" >
+                                                <apex:actionSupport event="onchange" reRender="lendingSavingsInvestigation,RegLaw,RegLawLabel" status="RegLawStatus2"/>
+                                            </apex:inputField>
+                            
+                                        </div>
+                            </apex:define>                                                                 
+                        </apex:pageBlockSectionItem>                        
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Lending/Savings Investigation Comments"/>                   
+                        <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF(OR(case.Lending_Savings_C_L_Disposition__c='Investigation Required',case.Lending_Savings_C_L_Disposition__c='Pending Review',case.Lending_Saving_Investigation_Disposition__c='Exception'),'background-color:C00','background-color:transparent')}"></div>       
+                                        <apex:inputField value="{!case.Lending_Savings_Investigation_Comments__c}" style="width:300px;height:45px" />
+                                  </div>
+                                </apex:define>
+                        </apex:pageBlockSectionItem> 
+                    </apex:pageBlockSection>
+                    
+                    <apex:actionStatus id="RegLawStatus2">
+                        <apex:facet name="start">
+                            <div style="text-align:center;">
+                                <img src="{!$Resource.SpinIcon}"/>
+                            </div>
+                        </apex:facet>
+                    </apex:actionStatus>    
+                                                    
+                    <apex:pageBlockSection id="mortgageCLInvestigation" columns="2">                        
+                        <apex:pageBlockSectionItem helpText="Reg F(FDCPA)"> 
+                            <apex:outputLabel value="Mortgage/CL Investigation Disposition"/>
+                            <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF((case.Other_Mortgage_CL_Only_C_L_Disposition__c='Investigation Required'||case.Other_Mortgage_CL_Only_C_L_Disposition__c='Pending Review')&& $ObjectType.Case.fields.Mortgage_CL_Investigation_Disposition__c.Updateable,'background-color:C00','background-color:transparent')}"></div>                                                                                 
+                            
+                                            <apex:inputField value="{!case.Mortgage_CL_Investigation_Disposition__c}" >
+                                                <apex:actionSupport event="onchange" reRender="mortgageCLInvestigation,RegLaw,RegLawLabel" status="RegLawStatus3"/>
+                                            </apex:inputField>
+                            
+                                        </div>
+                            </apex:define>                                                                                    
+                        </apex:pageBlockSectionItem>                        
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="Mortgage/CL Investigation Comments"/>                   
+                        <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF(OR(case.Other_Mortgage_CL_Only_C_L_Disposition__c='Investigation Required',case.Other_Mortgage_CL_Only_C_L_Disposition__c='Pending Review',case.Mortgage_CL_Investigation_Disposition__c='Exception'),'background-color:C00','background-color:transparent')}"></div>       
+                                        <apex:inputField value="{!case.Mortgage_CL_Other_Investigation_Comments__c}" style="width:300px;height:45px" />
+                                  </div>
+                                </apex:define>
+                        </apex:pageBlockSectionItem> 
+                    </apex:pageBlockSection>                
+                    
+                    <apex:pageBlockSection id="scraInvestigation" columns="2">                        
+                        <apex:pageBlockSectionItem helptext="Servicesmembers Civil Relief Act"> 
+                            <apex:outputLabel value="SCRA Investigation Disposition"/>
+                            <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF((case.SCRA_C_L_Disposition__c='Investigation Required'||case.SCRA_C_L_Disposition__c='Pending Review')&& $ObjectType.Case.fields.SCRA_Investigation_Disposition__c.Updateable,'background-color:C00','background-color:transparent')}"></div>                                                                                 
+                            
+                                            <apex:inputField value="{!case.SCRA_Investigation_Disposition__c}" >
+                                                <apex:actionSupport event="onchange" reRender="scraInvestigation,RegLaw,RegLawLabel" status="RegLawStatus3"/>
+                                            </apex:inputField>
+                            
+                                        </div>
+                            </apex:define>                                                                                                                                   
+                        </apex:pageBlockSectionItem>                        
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="SCRA Investigation Comments"/>                   
+                        <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF(OR(case.SCRA_C_L_Disposition__c='Investigation Required',case.SCRA_C_L_Disposition__c='Pending Review',case.SCRA_Investigation_Disposition__c ='Exception'),'background-color:C00','background-color:transparent')}"></div>       
+                                        <apex:inputField value="{!case.SCRA_Investigation_Comments__c}" style="width:300px;height:45px" />
+                                  </div>
+                                </apex:define>
+                        </apex:pageBlockSectionItem> 
+                    </apex:pageBlockSection>
+                    
+                     <apex:actionStatus id="RegLawStatus3">
+                        <apex:facet name="start">
+                            <div style="text-align:center;">
+                                <img src="{!$Resource.SpinIcon}"/>
+                            </div>
+                        </apex:facet>
+                    </apex:actionStatus>    
+                                   
+                    <apex:pageBlockSection id="privateWealth" columns="2">
+                        <apex:pageBlockSectionItem helptext="ERISA, Uniform Trust Code, Uniform Principal & Income Act"> 
+                            <apex:outputLabel value="PWM Investigation Disposition"/>
+                            <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF((case.PWM_Exception_Disposition__c='Investigation Required'||case.PWM_Exception_Disposition__c='Pending Review')&& $ObjectType.Case.fields.PWM_Investigation_Disposition__c.Updateable,'background-color:C00','background-color:transparent')}"></div>                                                                                 
+                            
+                                            <apex:inputField value="{!case.PWM_Investigation_Disposition__c}" >
+                                                <apex:actionSupport event="onchange" reRender="privateWealth,RegLaw,RegLawLabel" status="RegLawStatus4"/>
+                                            </apex:inputField>
+                            
+                                        </div>
+                            </apex:define>                                                                                                                                                      
+                        </apex:pageBlockSectionItem>                        
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="PWM Investigation Comments"/>                   
+                        <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF(OR(case.PWM_Exception_Disposition__c='Investigation Required',case.PWM_Exception_Disposition__c='Pending Review',case.PWM_Investigation_Disposition__c='Exception'),'background-color:C00','background-color:transparent')}"></div>       
+                                        <apex:inputField value="{!case.PWM_Investigation_Comments__c}" style="width:300px;height:45px" />
+                                  </div>
+                                </apex:define>
+                        </apex:pageBlockSectionItem> 
+                    </apex:pageBlockSection>
+                        
+                    
+                    <apex:pageBlockSection id="Wholesale" columns="2">
+                        <apex:pageBlockSectionItem helptext="HIPAA Health Insurance Portability, Reg H Flood Biggert-Waters, Reg Y Appraisal FIRREA"> 
+                            <apex:outputLabel value="WHL Investigation Disposition"/>
+                            <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF((case.WHL_Exception_Disposition__c='Investigation Required'||case.WHL_Exception_Disposition__c='Pending Review')&& $ObjectType.Case.fields.WHL_Investigation_Disposition__c.Updateable,'background-color:C00','background-color:transparent')}"></div>                                                                                 
+                            
+                                            <apex:inputField value="{!case.WHL_Investigation_Disposition__c}" >
+                                                <apex:actionSupport event="onchange" reRender="Wholesale,RegLaw,RegLawLabel" status="RegLawStatus4"/>
+                                            </apex:inputField>
+                            
+                                        </div>
+                            </apex:define>                                                                                                                                             
+                        </apex:pageBlockSectionItem>                        
+                        <apex:pageBlockSectionItem > 
+                            <apex:outputLabel value="WHL Investigation Comments"/>                   
+                        <apex:define name="requiredClientFeedback">
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock" style="{!IF(OR(case.WHL_Exception_Disposition__c='Investigation Required',case.WHL_Exception_Disposition__c='Pending Review',case.WHL_Investigation_Disposition__c='Exception'),'background-color:C00','background-color:transparent')}"></div>       
+                                        <apex:inputField value="{!case.WHL_Investigation_Comments__c}" style="width:300px;height:45px" />
+                                  </div>
+                                </apex:define>
+                        </apex:pageBlockSectionItem> 
+                    </apex:pageBlockSection>
+                </apex:actionRegion>                                                    
+             
+            
+            <apex:pageBlockSectionItem >
+                <apex:outputPanel id="RegLawLabel">
+                <apex:outputLabel value="Reg/Law Potential Exception" for="RegLawField"/>
+                </apex:outputPanel>
+                <apex:outputPanel id="RegLaw">                   
+                    <apex:inputField id="RegLawField" value="{!case.Reg_Law_Potential_Exception__c}" required="{!case.Deposit_Others_Investigation_Disposition__c='Exception' || case.Fair_Banking_Investigation_Disposition__c='Exception' || case.Fair_Credit_Investigation_Disposition__c='Exception' || case.Lending_Saving_Investigation_Disposition__c='Exception' || case.Mortgage_CL_Investigation_Disposition__c='Exception' || case.SCRA_Investigation_Disposition__c='Exception' || case.PWM_Investigation_Disposition__c='Exception' || case.WHL_Investigation_Disposition__c='Exception' }"/>
+                </apex:outputPanel>                   
+            </apex:pageBlockSectionItem>
+            
+        </apex:pageBlockSection>      
+      
+        <!-- These fields do not render on the page, but were put here so that the controller extension getrecord() method retrieves these fields. -->      
+        <apex:outputField value="{!case.Cat_Ref_Name__c}" rendered="false"/>
+        <apex:outputField value="{!case.Cat_Level_1__c}" rendered="false"/>
+        <apex:outputField value="{!case.Cat_Level_2__c}" rendered="false"/>
+        <apex:outputField value="{!case.Cat_Level_3__c}" rendered="false"/>
+        <apex:outputField value="{!case.Cat_Level_4__c}" rendered="false" />
+        <apex:outputField value="{!case.Cat_Level_5__c}" rendered="false"/>
+        <apex:outputField value="{!case.CMI_Deleted_case__c}" rendered="FALSE" />
+        <apex:outputField rendered="false" value="{!case.Account_For_Open_Cases__c}"/>
+        <apex:outputField rendered="false" value="{!case.Account_For_Closed_Cases__c}"/>
+        <apex:outputField rendered="false" value="{!case.origin}"/>              
+        <!--Start changes for CMI 2014 Release 3 Warranty fixes 2 -->
+        <!--For CMI 2015 fixes, the below panel is commented-->
+        <!--<apex:outputPanel style="display:none;visibility:hidden" id="acctTypeInputHidden">
+            <apex:inputField value="{!case.Account_Type__c}" />
+        </apex:outputpanel>-->
+                        
+        <!--End changes for CMI 2014 Release 3 Warranty fixes 2 -->    
+    </apex:pageBlock>    
+  </apex:form>
+</apex:page>

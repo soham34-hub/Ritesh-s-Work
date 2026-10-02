@@ -1,0 +1,284 @@
+<apex:page standardController="Case" extensions="FirstAidEdit_ControllerExtension,CategoryLists_ControllerExtension">
+    <apex:messages style="color:red;font-weight:bold;" />   
+    <apex:form >
+        <apex:pageBlock title="First Aid Edit Page" mode="edit">
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton action="{!save}" value="Save"/>
+                <apex:commandButton action="{!cancel}" value="Cancel"/>
+            </apex:pageBlockButtons>
+        
+            <apex:pageBlockSection title="Case Information" columns="2">
+                <apex:outputField value="{!case.CaseNumber}"/>
+                <apex:outputField value="{!case.RecordTypeId}"/>
+                <apex:outputField value="{!case.OwnerId}"/>
+                <br />
+                
+                <apex:inputField value="{!case.Origin}" required="TRUE"/>
+                <apex:inputField value="{!case.Case_Association_Type__c}" />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection columns="1">
+<!--
+                <apex:pageBlockSectionItem id="submitterNotRequired" rendered="{!AND(case.Call_Source__c!='Internal', case.Call_Source__c!='Mortgage Client Service', case.Call_Source__c!='Private Wealth')}"> 
+-->
+                    <c:CustomLookup value="{!Case.Submitter__c}" object="Contact" objectName="Case" fieldName="Submitter__c" displayFields="Email,Title,Phone" />
+<!--
+               </apex:pageBlockSectionItem>
+-->
+            </apex:pageBlockSection>
+                
+            <apex:pageBlockSection columns="1">
+                <apex:inputField value="{!case.Type}" required="TRUE"/>
+                <apex:inputField value="{!case.Call_Source__c}" required="TRUE"/>
+            </apex:pageBlockSection>
+
+            <apex:pageBlockSection id="MgrCall" columns="1">
+                <apex:inputField value="{!case.Is_This_a_Manager_Call__c}" required="True" rendered="{!OR(case.Call_Source__c='Mortgage Client Service',case.Call_Source__c='QBE/Sterling National')}" />
+                <apex:inputField value="{!case.Is_This_a_Manager_Call__c}"                 rendered="{!AND(case.Call_Source__c!='Mortgage Client Service', case.Call_Source__c!='QBE/Sterling National')}" />
+                <apex:inputField value="{!case.Reason_for_Transfer__c}" />
+<!--
+                <apex:inputField value="{!case.Reason_for_Transfer__c}"    required="True" rendered="{!OR(case.Call_Source__c='Mortgage Client Service',case.Call_Source__c='QBE/Sterling National')}"  />
+                <apex:inputField value="{!case.Reason_for_Transfer__c}"                    rendered="{!AND(case.Call_Source__c!='Mortgage Client Service', case.Call_Source__c!='QBE/Sterling National')}"  />
+-->
+            </apex:pageBlockSection>
+                
+            <apex:pageBlockSection columns="1">
+                <apex:outputField value="{!case.Subtype__c}" />
+                <apex:inputField value="{!Case.Month_Year_Problem_Started__c}" />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Client Information" columns="2">
+                <apex:inputField value="{!case.Is_this_a_Client__c}" required="True"/>
+                <apex:inputField value="{!case.Is_This_An_Authorized_Third_Party__c}"/>
+
+                <apex:inputField value="{!case.Business_or_Personal__c}"/>
+                 <apex:inputField value="{!case.Contact_Name__c}"/>
+                
+                <apex:inputField value="{!case.Client_Name__c}"/>
+                <apex:inputField value="{!case.Contact_Phone__c}"/>
+               
+                <apex:inputField value="{!case.Account_Number__c}"/>
+                <br />
+                
+                <apex:inputfield value="{!case.Account_Type__c}"/>
+                <br />
+                
+                <apex:inputField value="{!case.Client_Follow_Up_Needed__c}"/>
+                <br />
+                
+                <apex:inputField value="{!case.Client_Contact_Number__c}"/>
+                <apex:inputField value="{!case.Best_Time_To_Call__c}"/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Client Feedback Details" columns="2" >
+                <apex:inputField value="{!case.Is_Feedback_regarding_a_TM_Dept__c}"/>
+                <c:CustomLookup value="{!Case.Teammate_Search__c}" object="Contact" objectName="Case" fieldName="Teammate_Search__c" displayFields="Email,Title,Phone" />
+                <!-- <c:CustomLookup value="{!Case.Department_Search__c}" object="Org_Unit__c" objectName="Case" fieldName="department_search__c" displayFields="Cost_Center__c,Address__c,City__c,State__c"/> -->
+                <br /> 
+                <c:CustomLookup value="{!Case.Department_Search__c}" object="Org_Unit__c" objectName="Case" fieldName="department_search__c" displayFields="RecordType.Name,Cost_Center__c,Address__c,City__c,State__c"/>  
+                <br/>
+                <apex:inputField value="{!case.Other_Department_List__c}" />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection columns="1">                
+                <apex:pageBlockSectionItem rendered="{!OR(case.Type='Positive Feedback/Compliment', case.Type='Complaint')}" >
+                    <apex:outputLabel value="Client Feedback"/>
+                    
+                    <apex:define name="requiredInputDiv">
+                        <div class="requiredInput">
+                            <div class="requiredBlock"></div>
+                                
+                            <apex:inputTextArea value="{!case.Description}" cols="80" rows="7" required="True" />
+                        </div>
+                    </apex:define>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!AND(case.Type!='Positive Feedback/Compliment', case.Type!='Complaint')}" >
+                    <apex:outputLabel value="Client Feedback"/>
+                    <apex:inputTextArea value="{!case.Description}" cols="80" rows="7" />
+                </apex:pageBlockSectionItem> 
+            </apex:pageBlockSection> 
+            
+            <apex:pageBlockSection title="Feedback Category" columns="1">
+                <apex:outputField value="{!case.Submitter_Category__c}"/ >
+                <br/>
+                <apex:outputField value="{!case.Submitter_Sub_Category__c}"/>
+                <apex:outputField value="{!case.Cat_Ref_Name__c}"/>
+            </apex:pageBlockSection>
+ <!--               
+            <c:CaseCatalogCategoryComponent caseRecord="{!case}" isReadOnly="false" groupName="FA" isFirstTimeparam="{!HiddenFirstTimeField}"  />
+ -->
+ <!-- ************* -->
+ 
+                    <!-- ******************************************* --> 
+                    <!-- *           C A T E G O R I E S           * -->
+                    <!-- ******************************************* --> 
+                    <apex:outputPanel id="CategoryPanel" >
+                        <div style="margin-left:14%;">
+                            <apex:outputLabel value="Level 1" for="level1choice"/>
+                            &nbsp;
+                            <apex:actionStatus id="level1choiceStatus">
+                                <apex:facet name="start">
+                                    <img src="{!$Resource.SpinIcon}"/>
+                                </apex:facet>
+                            </apex:actionStatus>
+                            &nbsp;
+                            <apex:actionRegion >
+                                <apex:selectList value="{!Level1Choice}" multiselect="False" size="5" id="level1choice">
+                                    <apex:selectOptions value="{!Level1Choices}"/>
+                                    <apex:actionSupport event="onchange" action="{!updateLists}" reRender="CategoryPanel" status="level1choiceStatus"/>
+                                </apex:selectList>
+                            </apex:actionRegion>
+                            
+                            <br /><br />
+
+                            <apex:outputLabel value="Level 2" for="level2choice"/>
+                            &nbsp;
+                            <apex:actionStatus id="level2choiceStatus">
+                                <apex:facet name="start">
+                                    <img src="{!$Resource.SpinIcon}"/>
+                                </apex:facet>
+                            </apex:actionStatus>
+                            &nbsp;
+                            <apex:actionRegion >
+                                <apex:selectList value="{!Level2Choice}" multiselect="False" size="5" id="level2choice">
+                                    <apex:selectOptions value="{!Level2Choices}"/>
+                                    <apex:actionSupport event="onchange" action="{!updateLists}" reRender="CategoryPanel" status="level2choiceStatus"/>
+                                </apex:selectList>
+                            </apex:actionRegion>
+
+                            <br /><br />
+
+                            <apex:outputLabel value="Level 3" for="level3choice"/>
+                            &nbsp;
+                            <apex:actionStatus id="level3choiceStatus">
+                                <apex:facet name="start">
+                                    <img src="{!$Resource.SpinIcon}"/>
+                                </apex:facet>
+                            </apex:actionStatus>
+                            &nbsp;
+                            <apex:actionRegion >
+                                <apex:selectList value="{!Level3Choice}" multiselect="False" size="5" id="level3choice">
+                                    <apex:selectOptions value="{!Level3Choices}"/>
+                                    <apex:actionSupport event="onchange" action="{!updateLists}" reRender="CategoryPanel" status="level3choiceStatus"/>
+                                </apex:selectList>
+                            </apex:actionRegion>
+        
+                            <br /><br />
+
+                            <apex:outputLabel value="Level 4" for="level4choice"/>
+                            &nbsp;
+                            <apex:actionStatus id="level4choiceStatus">
+                                <apex:facet name="start">
+                                    <img src="{!$Resource.SpinIcon}"/>
+                                </apex:facet>
+                            </apex:actionStatus>
+                            &nbsp;
+                            <apex:actionRegion >
+                                <apex:selectList value="{!Level4Choice}" multiselect="False" size="5" id="level4choice">
+                                    <apex:selectOptions value="{!Level4Choices}"/>
+                                    <apex:actionSupport event="onchange" action="{!updateLists}" reRender="CategoryPanel" status="level4choiceStatus"/>
+                                </apex:selectList>
+                            </apex:actionRegion>
+                            
+                            <br /><br />
+
+                            <apex:outputLabel value="Level 5" for="level5choice"/>
+                            &nbsp;
+                            <apex:actionStatus id="level5choiceStatus">
+                                <apex:facet name="start">
+                                    <img src="{!$Resource.SpinIcon}"/>
+                                </apex:facet>
+                            </apex:actionStatus>
+                            &nbsp;
+                            <apex:actionRegion >
+                                <apex:selectList value="{!Level5Choice}" multiselect="False" size="5" id="level5choice">
+                                    <apex:selectOptions value="{!Level5Choices}"/>
+                                    <apex:actionSupport event="onchange" action="{!updateLists}" reRender="CategoryPanel" status="level5choiceStatus"/>
+                                </apex:selectList>
+                            </apex:actionRegion>
+
+                            <br /><br />
+<!--
+                            <apex:outputlabel value="Level 6" />
+                            &nbsp;&nbsp;
+                            <apex:inputfield style="width:250px;" value="{!case.Cat_Level_6__c}" />
+ -->                           
+                        </div>
+
+                        <apex:actionStatus id="CategoryStatus">
+                            <apex:facet name="start">
+                                <img src="{!$Resource.SpinIcon}"/>
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputPanel>
+ 
+ <!-- ************* -->
+ 
+            <apex:pageBlockSection columns="2" >
+                <apex:outputField value="{!case.Submitter_s_Root_Cause__c}"/>
+                <apex:inputField value="{!case.Initiative_Tracking__c}"/>
+            </apex:pageBlockSection>
+                        
+            <apex:pageBlockSection title="Resolution Details" columns="2">
+                <apex:inputField value="{!case.Refund__c}"/>
+                <apex:inputField value="{!case.Refund_Amount__c}"/>
+                <apex:inputField value="{!case.Type_of_Refund__c}"/>
+                <br/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Is Coaching Needed" columns="1">
+                <apex:inputField value="{!case.Coaching_Needed_for_the_Submitter__c}" />
+                <apex:inputField value="{!case.Coaching_Comments__c}" style="width:500px;height:140px;" />
+            </apex:pageBlockSection>
+            
+            
+            <apex:pageBlockSection title="Was this a Misdirected Call" columns="1">
+                <apex:inputField value="{!case.Misdirected_Call_Category__c}" />
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Misdirected Call Comments"/>
+                    <apex:inputTextArea value="{!case.Misdirected_Call_Comments__c}" cols="80" rows="7"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+
+            
+            <apex:pageBlockSection title="Close Case Section" columns="2">
+                <apex:inputField value="{!case.Status}" required="True" />
+                <apex:inputField value="{!case.Priority}" required="True" />
+                
+                <apex:inputField value="{!case.Status_Reason__c}" required="True" />
+                <apex:inputField value="{!case.Follow_Up_Date__c}" />
+                
+                <apex:inputField value="{!case.Root_Cause__c}" />
+                <br />
+            </apex:pageBlockSection>
+
+            <apex:pageBlockSection columns="1" >               
+                <apex:inputField value="{!case.CPR_Additional_Comments__c}" style="width:500px;height:140px;" />
+                <br />
+            </apex:pageBlockSection>
+<!--            
+            <apex:pageBlockSection title="Parent Case Details" columns="1" rendered="{!OR(FirstAidManagerProfile, SystemAdministratorProfile )}" >
+                <div>
+                    <apex:outputField value="{!case.ParentId}" />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <apex:commandButton action="{!deleteParentRelationship}" value="Delete Parent Relationship" style="margin-left:200px;" />
+                </div>
+                <br />
+            </apex:pageBlockSection>
+-->
+<!--            
+            <apex:inputhidden id="hiddenFirstTimeField" value="{!hiddenFirstTimeField}" />
+-->
+            <apex:outputField value="{!case.Cat_Ref_Name__c}" rendered="false"/>
+            <apex:outputField value="{!case.Cat_Level_1__c}" rendered="false"/>
+            <apex:outputField value="{!case.Cat_Level_2__c}" rendered="false"/>
+            <apex:outputField value="{!case.Cat_Level_3__c}" rendered="false"/>
+            <apex:outputField value="{!case.Cat_Level_4__c}" rendered="false" />
+            <apex:outputField value="{!case.Cat_Level_5__c}" rendered="false"/>
+
+
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

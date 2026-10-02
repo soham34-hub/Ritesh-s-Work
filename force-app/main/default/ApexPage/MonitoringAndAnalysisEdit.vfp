@@ -1,0 +1,466 @@
+<apex:page standardController="Case" extensions="MonitoringAnalysisEdit_ControllerExtn,CategoryLists_ControllerExtension" showHeader="True" sidebar="False" id="id1">
+    <apex:messages style="color:red;font-weight:bold;"/>
+    <script type="text/javascript" > 
+    
+    var originalOnload = window.onload;
+    window.onload = f1;setFocusOnLoad;
+   
+    function f1() 
+    {
+        originalOnload();
+        if(document.getElementById('{!$Component.id1.newForm.MACase.rootCauseFields.id3}').value=='' || document.getElementById('{!$Component.id1.newForm.MACase.rootCauseFields.id3}').value=='Dissatisfaction with Bank Policy or Procedure' || document.getElementById('{!$Component.id1.newForm.MACase.rootCauseFields.id3}').value=='Non SunTrust Impact')
+        { 
+            document.getElementById('{!$Component.id1.newForm.MACase.rootCauseDetails}').style.display='none';
+        }         
+    }  
+    
+    function hidefieldsrootCauseDetail()
+    {
+     
+        if(document.getElementById('{!$Component.id1.newForm.MACase.rootCauseFields.id3}').value=='' || document.getElementById('{!$Component.id1.newForm.MACase.rootCauseFields.id3}').value=='Dissatisfaction with Bank Policy or Procedure' || document.getElementById('{!$Component.id1.newForm.MACase.rootCauseFields.id3}').value=='Non SunTrust Impact')
+        {
+            document.getElementById('{!$Component.id1.newForm.MACase.rootCauseDetails}').style.display='none';
+        }
+        else
+        {
+            document.getElementById('{!$Component.id1.newForm.MACase.rootCauseDetails}').style.display='block';
+        }
+    }
+    function noenter(e)
+    {
+        if(window.event)
+        {
+            key = window.event.keyCode; 
+        } 
+        else
+        {
+            key = e.which; 
+        }
+        if(key == 13) 
+        {
+            var ele=document.getElementById('id1:newForm:MACase:fbcat:fbcat1:catButton:catSearchButton');
+            ele.click();
+            return false;
+        } 
+        else
+        {
+            return true;
+        }
+     }
+     function setFocusOnLoad() 
+     { 
+         document.getElementById('{!$Component.id1.newForm.MACase}').focus(); 
+     } 
+     var isClicked = false;
+     function checkDoubleSubmit(obj)
+     {
+        if (isClicked) 
+            {
+    
+                return false;
+            }
+        else  
+            {
+                isClicked = true;
+                obj.className = 'btnDisabled';//only shows the button as disabled.
+            }
+      }
+   </script>   
+   
+   <apex:form id="newForm">
+       <apex:pageBlock title="Monitoring And Analysis Case" mode="edit" id="MACase"> 
+           <apex:pageBlockButtons location="both"> 
+               <apex:commandbutton action="{!save}" value="Save" onclick="return checkDoubleSubmit(this);"/>
+               <apex:commandbutton action="{!cancel}" value="Cancel"/>
+           </apex:pageBlockButtons>  
+             
+           <apex:pageBlockSection title="Case Details" id="CaseDetail">
+               <apex:outputField value="{!case.CaseNumber}"/>
+               <apex:outputField value="{!case.RecordTypeId}"/>
+               <apex:inputField value="{!case.Origin}"/>
+               <apex:inputField value="{!case.Case_Group_Assignment__c}" />
+               <apex:inputField value="{!case.Type}"/>
+               <apex:inputField value="{!case.Due_Date__c}"/>
+               <apex:outputField value="{!case.OwnerId}"/>
+           </apex:pageBlockSection>
+             
+           <apex:pageBlockSection title="Monitoring Overview" id="MonitoringTheme" columns="1">
+               <apex:pageBlockSectionItem > 
+                   <apex:outputlabel value="Monitoring Name" /> 
+                   <apex:actionRegion >
+                       <apex:inputField value="{!case.Monitoring_Name__c}" required="true">
+                           <apex:actionSupport event="onchange" action="{!nullifyMonitoringNameOnChange}" rerender="MonitoringTheme" status="MonitoringName"/>
+                       </apex:inputField>
+                   </apex:actionRegion>
+               </apex:pageBlockSectionItem>
+                 
+               <apex:pageBlockSectionItem rendered="{!case.Monitoring_Name__c == 'Other'}">
+                   <apex:outputlabel value="Other Monitoring Name"/>
+                   <apex:inputField value="{!case.Other_Monitoring_Name__c}" required="{!case.Monitoring_Name__c == 'Other'}"/>
+               </apex:pageBlockSectionItem>
+           </apex:pageBlockSection>
+           
+           <apex:actionStatus id="MonitoringName">
+                <apex:facet name="start">
+                    <div style="text-align:center;">
+                        <img src="{!$Resource.SpinIcon}"/>
+                    </div>
+                </apex:facet>
+           </apex:actionStatus>
+            
+           <apex:pageBlockSection >
+               <apex:inputField value="{!case.Product_Segment__c}" required="true"/>
+           </apex:pageBlockSection>
+           <apex:pageBlockSection >
+               <apex:pageBlockSectionItem >
+                   <apex:outputLabel value="Account/Product Type" style="display:block;width:220px;" />
+                    <apex:inputField value="{!case.Account_Product_Type__c}" required="true"/>
+               </apex:pageBlockSectionItem>
+           </apex:pageBlockSection>
+           <apex:pageBlockSection id="MonitoringFields" columns="1">
+               <apex:inputField value="{!case.Data_FROM_Date__c}"/>
+               <apex:inputField value="{!case.Data_TO_Date__c}"/>
+               <apex:inputField value="{!case.Number_Complaints_Reviewed__c}"/>
+               <apex:inputField value="{!case.Number_Exceptions_Identified__c}"/>
+               <apex:inputField value="{!case.Accuracy_Rate__c}"/>
+               <apex:inputField value="{!case.Trending_Status__c}"/>
+               <apex:inputField value="{!case.Monitoring_Description__c}" style="width:550px;height:80px;" id="MonitoringDescription"/>
+           </apex:pageBlockSection>
+             
+           <apex:pageBlockSection id="fbcat" title="Monitoring Category/Subject" columns="1">
+
+            <!-- ******************************************* --> 
+            <!-- *           C A T E G O R I E S           * -->
+            <!-- ******************************************* --> 
+            <apex:outputPanel id="CategoryPanel" >                 
+                <apex:pageBlockSection id="fbcat1" columns="1">
+                    <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Subject" style="display:block;width:210px;"/>
+                            <apex:inputField value="{!case.Subject}" style="width:435px"/>
+                     </apex:pageBlockSectionItem>  
+                    <apex:pageBlockSectionItem id="catButton">
+                        <apex:outputLabel value="Search Category"/>
+                            <apex:actionRegion >                              
+                                <apex:inputText value="{!searchTextValue}" onkeypress="return noenter(event);"/>
+                                <apex:commandButton value="Search" action="{!categorySearch}"  rerender="CategoryPanel" status="CategoryStatus" id="catSearchButton"/>
+                                <apex:outputText value="To re-display all values, clear out the value entered and select Search again." rendered="{!searchTextValue != null}" style="color:red;font-weight:bold;"/>
+                            </apex:actionRegion>
+                                
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                                
+                <div style="margin-left:13.5%;">
+                <apex:outputLabel value="Cat Level 3" for="level3choice"/>
+                &nbsp;
+                <apex:actionStatus id="level3choiceStatus">
+                    <apex:facet name="start">
+                        <img src="{!$Resource.SpinIcon}"/>
+                    </apex:facet>
+                </apex:actionStatus>
+                &nbsp;
+                <apex:actionRegion >
+                    <apex:selectList value="{!Level3Choice}" multiselect="False" size="10" id="level3choice" style="width:40%">
+                        <apex:selectOptions value="{!SubmitterLevel3Choices}"/>
+                        <apex:actionSupport event="onchange" action="{!updateLists}" reRender="CategoryPanel" status="level3choiceStatus"/>
+                    </apex:selectList>
+                </apex:actionRegion>
+                            
+                <br /><br />
+                            
+                <apex:outputLabel value="Cat Level 4" for="level4choice"/>
+                &nbsp;
+                <apex:actionStatus id="level4choiceStatus">
+                    <apex:facet name="start">
+                        <img src="{!$Resource.SpinIcon}"/>
+                    </apex:facet>
+                </apex:actionStatus>
+                &nbsp;
+                <apex:actionRegion >
+                    <apex:selectList value="{!Level4Choice}" multiselect="False" size="10" id="level4choice" style="width:40%">
+                        <apex:selectOptions value="{!Level4Choices}"/>
+                        <apex:actionSupport event="onchange" action="{!updateLists}" reRender="CategoryPanel" status="level4choiceStatus"/>
+                    </apex:selectList>
+                </apex:actionRegion>
+                            
+                <br /><br />
+
+                <apex:outputLabel value="Cat Level 5" for="level5choice"/>
+                &nbsp;
+                <apex:actionStatus id="level5choiceStatus">
+                <apex:facet name="start">
+                    <img src="{!$Resource.SpinIcon}"/>
+                </apex:facet>
+                </apex:actionStatus>
+                &nbsp;
+                <apex:actionRegion >
+                    <apex:selectList value="{!Level5Choice}" multiselect="False" size="10" id="level5choice" style="width:40%">
+                        <apex:selectOptions value="{!Level5Choices}"/>
+                        <apex:actionSupport event="onchange" action="{!updateLists}" reRender="CategoryPanel" status="level5choiceStatus"/>
+                    </apex:selectList>
+                </apex:actionRegion>                            
+                </div>
+
+                <apex:actionStatus id="CategoryStatus">
+                    <apex:facet name="start">
+                        <div style="text-align:center;"> 
+                            <img src="{!$Resource.SpinIcon}"/>
+                        </div>
+                    </apex:facet>
+                </apex:actionStatus>
+            </apex:outputPanel>
+        </apex:pageBlockSection>
+             
+        <apex:pageblocksection columns="1" title="Monitoring Results">
+
+        </apex:pageblocksection>     
+ 
+        <apex:pageblocksection >   
+                        
+            <apex:outputPanel >
+                <apex:pageBlockSectionItem rendered="false">
+                    <apex:outputPanel id="RegLawLabel">
+                        <apex:outputLabel value="Compliance Referral:Reg/Law Trigger" for="RegLawField1"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="RegLaw">                   
+                        <apex:outputField id="RegLawField1" value="{!case.Compliance_Referral_Reg_Law_Trigger__c}"/>
+                        <apex:outputText escape="false" value="{!SUBSTITUTE(case.Compliance_Referral_Reg_Law_Trigger__c,';','<br/>')}"/>
+                    </apex:outputPanel>                   
+                </apex:pageBlockSectionItem>
+                    
+            </apex:outputPanel>
+                    
+
+                
+            </apex:pageblocksection> 
+            <apex:inputField value="{!case.ComplianceSMEReview_Reg_Law_Trigger__c}" rendered="false"/>
+            <apex:inputField value="{!case.Reg_Law_Risk_SME_Review_Completed__c}" rendered="false"/>
+            <apex:inputField value="{!case.Compliance_SME_Review_No_Reg_Law_Trigger__c}" rendered="false"/> 
+            <apex:inputField value="{!case.Reg_Law_Potential_Exception__c}" rendered="false"/>
+            <apex:inputField value="{!case.Referral_Opt_In__c}" rendered="false"/>
+            <apex:inputField value="{!case.CL_Exception_Review_Disposition__c}" rendered="false"/>
+         
+            
+            <apex:actionRegion >
+                <apex:outputPanel >                                                                
+                    <apex:outputPanel id="referrals">
+        
+                        <div style="margin-Left:2%">
+                            <apex:outputText Style="font-weight:bold;color:red" value="Reminder: As each reg/law SME review is completed, the Compliance SME Review Comments should be updated with review findings." />
+                        </div>
+                        <br/>
+                                
+                        <apex:pageBlockTable value="{!assignComplianceReferralRecord}"  var="CR">
+                          
+                              <apex:column headerValue="Delete">               
+                                  <apex:inputCheckbox value="{!CR.showCheckbox}" rendered="{!CR.deleteRecord && $ObjectType.Case.fields.ComplianceSMEReview_Reg_Law_Trigger__c.Updateable}" />                                                      
+                                  <apex:inputCheckbox value="{!CR.showCheckbox}" rendered="{!CR.deleteRecord && !$ObjectType.Case.fields.ComplianceSMEReview_Reg_Law_Trigger__c.Updateable}" disabled="true"/>                            
+                              </apex:column>  
+                            
+                                                            
+                              <apex:column id="RegLaw" headerValue="Reg/Law" >
+                                  <apex:outputText value="{!CR.assignRegLawName}" rendered="{!CR.assignRegLawName!=null && CR.assignRegLawName!=''}"/>                          
+                                  <apex:selectList value="{!CR.assignRegLawName}" multiselect="False" size="1"  rendered="{!CR.assignRegLawName=null || CR.assignRegLawName=''}" >
+                                      <apex:selectOptions value="{!regLawValues}" />
+                                      <apex:actionSupport event="onchange" action="{!actionOnRegLaw}" status="ReferralStatus" reRender="referrals"/>
+                                  </apex:selectList> 
+                              </apex:column>
+                                                                
+                              <apex:column id="SMENeeded" headerValue="SME Review Needed?">                                                
+                                  <apex:outputText value="{!CR.assignSMEReviewNeeded}"  rendered="{!!$ObjectType.Case.fields.ComplianceSMEReview_Reg_Law_Trigger__c.Updateable || CR.assignRegLawName='No Reg/Law Exception Found'}"/>
+                                      <apex:define name="requiredSelectAccount">
+                                          <div class="requiredInput">
+                                              <div class="requiredBlock"></div>                            
+                                              <apex:selectList multiselect="false" size="1" value="{!CR.assignSMEReviewNeeded}" rendered="{!$ObjectType.Case.fields.ComplianceSMEReview_Reg_Law_Trigger__c.Updateable && CR.assignRegLawName!='No Reg/Law Exception Found'}" >                
+                                                  <apex:selectOption itemValue="--None--" itemLabel="--None--"/>
+                                                  <apex:selectOption itemValue="No" itemLabel="No"/>
+                                                  <apex:selectOption itemValue="Yes" itemLabel="Yes"/>                          
+                                              </apex:selectList>
+                                          </div>
+                                      </apex:define>                                                                  
+                              </apex:column>
+                          
+                              <apex:column headerValue="Reg/Law Exception">
+                                  <apex:outputText value="{!CR.assignRegLawExceptionValue}"  rendered="{!!$ObjectType.Case.fields.Reg_Law_Potential_Exception__c.Updateable || CR.assignRegLawName='No Reg/Law Exception Found'}"/>
+                                                                                                  
+                                  <apex:outputPanel rendered="{!$ObjectType.Case.fields.Reg_Law_Potential_Exception__c.Updateable &&  CR.assignRegLawName!='No Reg/Law Exception Found'}">
+                                           
+                                      <apex:selectList multiselect="false" size="1" value="{!CR.assignRegLawExceptionValue}" > 
+                                        <apex:selectOption itemValue="--None--" itemLabel="--None--"/>
+                                        <apex:selectOption itemValue="Exception" itemLabel="Exception"/>
+                                        <apex:selectOption itemValue="NoException" itemLabel="No Exception"/>
+                                        <apex:actionSupport event="onchange" action="{!actionOnRegLawException}" status="ReferralStatus" reRender="referrals"/>                    
+                                      </apex:selectList>
+                                            
+                                  </apex:outputPanel>
+                              </apex:column>                   
+                          
+                              <apex:column headerValue="SME Review Completed">                        
+                                  <apex:inputCheckbox value="{!CR.assignSMEReviewCompleted}" disabled="true"/>                                                                                                                                               
+                              </apex:column>                                                                                            
+                                                                 
+                      </apex:pageBlockTable>                                         
+                      
+                      <apex:outputPanel id="referralButton" >
+                            <apex:outputPanel rendered="{!$ObjectType.Case.fields.ComplianceSMEReview_Reg_Law_Trigger__c.Updateable && $Profile.Name='Compliance & Risk Specialist' && !disableAddButtonValue}">
+                              <apex:commandButton value="Add New Reg/Law" action="{!insertRow}" reRender="referrals" status="ReferralStatus"/>                
+                              <apex:commandButton value="Delete Reg/Law" disabled="true"/>
+                            </apex:outputPanel>
+                
+                          <apex:outputPanel rendered="{!$ObjectType.Case.fields.ComplianceSMEReview_Reg_Law_Trigger__c.Updateable && $Profile.Name!='Compliance & Risk Specialist' && !disableAddButtonValue}">
+                              <apex:commandButton value="Add New Reg/Law" action="{!insertRow}" reRender="reassignment,reassignment1,referrals" status="ReferralStatus"/>
+                              <apex:commandButton value="Delete Reg/Law" action="{!deleteRow}" rerender="reassignment,reassignment1,referrals" status="ReferralStatus"/>
+                          </apex:outputPanel>
+                
+                          <apex:outputPanel rendered="{!!$ObjectType.Case.fields.ComplianceSMEReview_Reg_Law_Trigger__c.Updateable}">
+                              <apex:commandButton value="Add New Reg/Law" disabled="true"/>                
+                              <apex:commandButton value="Delete Reg/Law" disabled="true"/>
+                          </apex:outputPanel>                                                    
+                          
+                          <apex:outputPanel rendered="{!disableAddButtonValue && $ObjectType.Case.fields.ComplianceSMEReview_Reg_Law_Trigger__c.Updateable && $Profile.Name!='Compliance & Risk Specialist'}">
+                              <apex:commandButton value="Add New Reg/Law" disabled="true"/>                
+                              <apex:commandButton value="Delete Reg/Law" action="{!deleteRow}" rerender="referrals" status="ReferralStatus"/>
+                          </apex:outputPanel>
+                          
+                          <apex:outputPanel rendered="{!disableAddButtonValue && $ObjectType.Case.fields.ComplianceSMEReview_Reg_Law_Trigger__c.Updateable && $Profile.Name='Compliance & Risk Specialist'}">
+                              <apex:commandButton value="Add New Reg/Law" disabled="true"/>                
+                              <apex:commandButton value="Delete Reg/Law" disabled="true"/>
+                          </apex:outputPanel>
+                          
+                                   
+                        </apex:outputPanel>
+                  </apex:outputPanel>
+                                                     
+              </apex:outputPanel>
+                   
+        
+                <apex:actionStatus id="ReferralStatus">
+                        <apex:facet name="start">
+                            <div style="text-align:center;">
+                                <img src="{!$Resource.SpinIcon}"/>
+                            </div>
+                        </apex:facet>
+                </apex:actionStatus> 
+            </apex:actionRegion>                  
+              
+                                  
+            
+            <apex:actionRegion >
+                <apex:pageBlockSection id="Comments" columns="1">                   
+                    <apex:pageBlockSectionItem >
+                       <apex:outputLabel value="Compliance SME Review Comments" style="display:block;width:220px;"/>
+                       <apex:inputField value="{!case.C_L_Investigation_Comments__c}" style="width:500px;height:140px;"/>
+                    </apex:pageBlockSectionItem>             
+                </apex:pageblocksection>
+            </apex:actionRegion>
+            
+            <apex:pageblocksection columns="1">                   
+                <apex:inputField value="{!case.Analysis_Comments__c}" style="width:500px;height:140px;"/>
+            </apex:pageblocksection>
+            
+            <apex:pageBlockSection id="rootCauseFields">                             
+                <apex:inputField value="{!case.Root_Cause__c}" id="id3" onchange="hidefieldsrootCauseDetail();">
+                    <apex:actionSupport event="onchange" action="{!nullifyRootCauseFieldsOnChange}"/>
+                </apex:inputField>                          
+            </apex:pageBlockSection>
+             
+            <apex:pageBlockSection id="rootCauseDetails" columns="1" >
+                <apex:inputField value="{!case.Root_Cause_Detail__c}" />
+            </apex:pageBlockSection>
+              
+            <apex:pageBlockSection >
+                <apex:inputField value="{!case.Level_of_Client_Impact__c}"/>
+            </apex:pageBlockSection>
+            <apex:actionRegion >
+                <apex:pageBlockSection id="MonitoringResult">
+                    <apex:pageBlockSectionItem >
+                        <!-- changes start for June 2022
+                        <apex:outputLabel value="Reported in IRM" style="display:block;width:220px;" />
+						-->
+                        <apex:outputLabel value="Reported in Archer" style="display:block;width:220px;" />
+                        <!-- changes end for June 2022-->
+                            <apex:inputField value="{!case.Reported_in_IRM__c}">
+                                <apex:actionSupport event="onchange" action="{!nullifyIRMFieldsOnChange}" rerender="MonitoringResult" status="IRMReporting"/>
+                            </apex:inputField>                        
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                    <!-- changes start for June 2022
+                    <apex:inputField value="{!case.IRM__c}" rendered="{!CONTAINS(case.Reported_in_IRM__c,'New IRM Issue') || CONTAINS(case.Reported_in_IRM__c,'Existing IRM Issue' ) || CONTAINS(case.Reported_in_IRM__c,'Risk Accepted in IRM' )}"/>             
+                    <apex:inputField value="{!case.Other_IRM_s__c}"  rendered="{!CONTAINS(case.Reported_in_IRM__c,'New IRM Issue') || CONTAINS(case.Reported_in_IRM__c,'Existing IRM Issue' ) || CONTAINS(case.Reported_in_IRM__c,'Risk Accepted in IRM' )}"/>
+                    <apex:inputField value="{!case.Control__c}"  rendered="{!CONTAINS(case.Reported_in_IRM__c,'New IRM Issue') || CONTAINS(case.Reported_in_IRM__c,'Existing IRM Issue' ) || CONTAINS(case.Reported_in_IRM__c,'Risk Accepted in IRM' )}"/>           
+    				-->
+					<apex:inputField value="{!case.IRM__c}" rendered="{!CONTAINS(case.Reported_in_IRM__c,'New Archer Issue Opened') || CONTAINS(case.Reported_in_IRM__c,'Existing Archer Issue' ) || CONTAINS(case.Reported_in_IRM__c,'Risk Accepted in Archer' )}"/>             
+                    <apex:inputField value="{!case.Other_IRM_s__c}"  rendered="{!CONTAINS(case.Reported_in_IRM__c,'New Archer Issue Opened') || CONTAINS(case.Reported_in_IRM__c,'Existing Archer Issue' ) || CONTAINS(case.Reported_in_IRM__c,'Risk Accepted in Archer' )}"/>
+                    <apex:inputField value="{!case.Control__c}"  rendered="{!CONTAINS(case.Reported_in_IRM__c,'New Archer Issue Opened') || CONTAINS(case.Reported_in_IRM__c,'Existing Archer Issue' ) || CONTAINS(case.Reported_in_IRM__c,'Risk Accepted in Archer' )}"/>           
+    				
+                    <!-- changes end for June 2022-->
+                </apex:pageBlockSection>
+            </apex:actionRegion>
+            <apex:pageBlockSection >
+                <apex:inputField value="{!case.Advanced_Search_Results_Case_Owner__c}" style="width:300px;height:50px;"/>
+            </apex:pageBlockSection>
+            <apex:actionStatus id="IRMReporting"> 
+                <apex:facet name="start"> 
+                    <div style="text-align:center;"> 
+                        <img src="{!$Resource.SpinIcon}"/> 
+                    </div> 
+                </apex:facet> 
+            </apex:actionStatus>
+             
+            <apex:pageBlockSection id="StatusFields">
+                <apex:inputField value="{!case.Status}" required="True"/>
+                <apex:inputField value="{!case.Status_Reason__c}" required="true"/>
+             
+            </apex:pageBlockSection>
+
+        <apex:actionRegion >
+            <apex:pageBlockSection id="exempt" columns="2" title="System Assigned fields">                                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$ObjectType.Case.fields.Exempt_from_CPR_Reporting__c.label}"/>
+                        <apex:inputField value="{!case.Exempt_from_CPR_Reporting__c}">
+                            <apex:actionSupport event="onchange" action="{!exemptFromCAOReportingOverriden}" status="exemptStatus" rerender="exempt,exempt1" />
+                        </apex:inputField>
+                        
+                </apex:pageBlockSectionItem>
+             
+            </apex:pageBlockSection> 
+                    
+            <apex:pageBlockSection columns="1" id="exempt1">
+                  
+                <apex:pageBlockSectionItem id="exemptOverride">
+                    <apex:outputLabel value="{!$ObjectType.Case.fields.Exempt_from_CAO_Reporting_Override__c.label}" rendered="{!((assignDisplayExemptOverride)|| (assignDisplayExemptOverrideforACKoverride) || (assignDisplayExemptOverrideforRESPoverride))|| ((case.Exempt_from_CAO_Reporting_Override__c != null && case.Exempt_from_CAO_Reporting_Override__c != '')) || ((case.Exempt_from_CAO_Reporting_Override__c == null || case.Exempt_from_CAO_Reporting_Override__c == '') && (previousValueForExempt))}" />
+                    <apex:define name="requiredInputDiv"> 
+                        <div class="requiredInput"> 
+                            <div class="requiredBlock"></div>
+                            <apex:inputField value="{!case.Exempt_from_CAO_Reporting_Override__c}" rendered="{!((assignDisplayExemptOverride)|| (assignDisplayExemptOverrideforACKoverride) || (assignDisplayExemptOverrideforRESPoverride))|| ((case.Exempt_from_CAO_Reporting_Override__c != null && case.Exempt_from_CAO_Reporting_Override__c != '')) || ((case.Exempt_from_CAO_Reporting_Override__c == null || case.Exempt_from_CAO_Reporting_Override__c == '') && (previousValueForExempt))}" style="width:1000px"  />
+                        </div>
+                    </apex:define>
+                </apex:pageBlockSectionItem>          
+            </apex:pageBlockSection>
+            
+             
+        </apex:actionRegion>
+            
+                
+        <apex:actionStatus id="exemptStatus">
+            <apex:facet name="start">
+                <div style="text-align:center;">
+                    <img src="{!$Resource.SpinIcon}"/>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+             
+             
+        <apex:inputfield value="{!case.Cat_Level_4__c}" rendered="false"/>
+        <apex:inputfield value="{!case.Cat_Level_5__c}" rendered="false"/>
+        <apex:inputfield value="{!case.Cat_Level_3__c}" rendered="false"/>
+        <apex:inputfield value="{!case.Cat_Ref_Name__c }" rendered="false"/>
+        <apex:inputfield value="{!case.Cat_Level_2__c }" rendered="false"/>
+        <apex:inputfield value="{!case.Cat_Level_1__c }" rendered="false"/>
+        <apex:inputfield value="{!case.CMI_Deleted_case__c }" rendered="false"/>
+        <apex:inputfield value="{!case.ClosedDate}" rendered="false"/>
+        </apex:pageBlock>   
+   
+    </apex:form>
+
+
+</apex:page>
