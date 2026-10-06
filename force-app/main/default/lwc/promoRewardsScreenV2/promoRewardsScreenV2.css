@@ -1,0 +1,193 @@
+/* Keep layout safe inside card */
+:host {
+  display: block;
+  max-width: 100%;
+  overflow-x: hidden;
+
+  --picker-max-width: 520px;
+  --picker-font-size: 1.05rem;
+  --picker-pad-y: 0.85rem;
+}
+
+/* Neutralize SLDS grid gutters */
+:host .slds-grid { max-width: 100%; box-sizing: border-box; }
+:host .slds-grid.slds-gutters { margin-left: 0 !important; margin-right: 0 !important; }
+:host .slds-grid.slds-gutters > .slds-col {
+  padding-left: var(--lwc-spacingSmall, 0.75rem) !important;
+  padding-right: var(--lwc-spacingSmall, 0.75rem) !important;
+}
+
+/* Picker layout helpers */
+:host .picker-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+:host .picker-wrap {
+  width: 100%;
+  max-width: var(--picker-max-width);
+}
+
+/* Enlarged combobox styling */
+:host .reward-picker {
+  width: 100%;
+  --slds-c-input-font-size: var(--picker-font-size);
+  --slds-c-input-line-height: 1.25;
+  --slds-c-input-spacing-vertical: var(--picker-pad-y);
+  --slds-c-input-radius-border: 0.5rem;
+  --slds-c-input-color-background: #fff;
+  --slds-c-input-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+/* Helper text */
+:host .picker-help {
+  margin-top: 0.375rem;
+  text-align: center;
+  max-width: var(--picker-max-width);
+}
+
+/* Responsiveness */
+@media (max-width: 30rem) {
+  :host {
+    --picker-max-width: 100%;
+    --picker-font-size: 1.1rem;
+    --picker-pad-y: 0.95rem;
+  }
+}
+
+/* Left-side bold 14px */
+.left-text {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Right-side bold 11px */
+.right-text {
+    font-size: 11px;
+    font-weight: bold;
+}
+
+/* Reward record link styling */
+.record-link {
+    font-weight: 700;
+    text-decoration: underline;
+    white-space: nowrap;
+    color: white;
+    cursor: pointer;
+}
+
+/* ========================= CONDITION BANNER ========================= */
+
+.condition-banner {
+    width: 100%;
+    background: #9966FF;       /* PURPLE */
+    padding: 4px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .5rem;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.condition-name-left {
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    white-space: nowrap;
+}
+
+.condition-record-right {
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    text-decoration: underline;
+    white-space: nowrap;
+}
+
+.condition-banner {
+    width: 100%;
+    background: #9966FF;
+    padding: 4px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 4px;
+}
+
+.condition-name-left {
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.condition-record-right {
+    font-size: 11px;
+    font-weight: bold;
+    text-decoration: underline;
+    color: white;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+
+/* ========================= REWARD BANNER ========================= */
+.reward-banner {
+    width: 100%;
+    background: #6699FF;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 4px;
+    color: white;
+    box-sizing: border-box;
+}
+
+.reward-banner-left {
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+}
+
+.reward-banner-link {
+    font-size: 13px;
+    font-weight: bold;
+    text-decoration: underline;
+    color: white;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* ========================= REWARD BANNER ========================= */
+.reward-banner {
+    width: 100%;
+    background: #6699FF !important;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 4px;
+    color: white !important;
+    box-sizing: border-box;
+}
+
+.reward-banner-left {
+    font-size: 14px;
+    font-weight: bold;
+    color: white !important;
+}
+
+.reward-banner-link {
+    font-size: 13px;
+    font-weight: bold;
+    color: white !important;
+    text-decoration: underline;
+    cursor: pointer;
+    white-space: nowrap;
+}

@@ -1,0 +1,426 @@
+<template>
+  <lightning-card>
+    <div class="slds-p-around_medium">
+
+      <!-- ========================= Reward Selector ========================= -->
+      <div class="slds-m-bottom_medium">
+        <div class="slds-grid slds-wrap slds-grid_align-center slds-m-bottom_x-small slds-align-middle">
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
+            <div class="slds-grid slds-align-middle slds-grid_align-center">
+              <lightning-icon icon-name="utility:choice" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+              <h3 class="slds-text-title_bold slds-m-vertical_none">Reward Selector</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="slds-grid slds-wrap slds-grid_align-center">
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4 picker-col">
+            <div class="picker-wrap">
+              <lightning-combobox
+                class="reward-picker"
+                name="rewardSelect"
+                variant="label-hidden"
+                placeholder="Select a reward…"
+                value={selectedRewardKey}
+                options={rewardOptions}
+                onchange={handleRewardChange}>
+              </lightning-combobox>
+            </div>
+
+            <div class="slds-form-element__help picker-help">
+              Choose a reward to display details below.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================= Selected Reward Card ========================= -->
+      <template if:true={selectedReward}>
+        <section class="slds-card slds-m-bottom_large slds-p-around_medium slds-border_left slds-border_right slds-border_bottom">
+
+          <!-- ====================== BLUE REWARD BANNER ====================== -->
+          <div class="slds-m-bottom_medium">
+            <div class="reward-banner">
+              <div class="reward-banner-left">REWARD&nbsp;{selectedReward.recName}</div>
+              <div class="reward-banner-link" onclick={handleOpenRewardRecord}>{selectedReward.recordName}</div>
+            </div>
+          </div>
+
+          <!-- ========================= Reward Summary ========================= -->
+          <div class="slds-grid slds-wrap slds-gutters">
+
+            <!-- LEFT COLUMN -->
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Reward Code</div>
+                <div>{selectedReward.rewardCode}</div>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Reward Status</div>
+                <span class={selectedReward.statusClass}>{selectedReward.rewardStatus}</span>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Payment Amount</div>
+                <lightning-formatted-number value={selectedReward.rewardPaymentAmount} maximum-fraction-digits="2"></lightning-formatted-number>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Payment Date</div>
+                <lightning-formatted-date-time value={selectedReward.rewardPaymentDate}></lightning-formatted-date-time>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Reward Type</div>
+                <div>{selectedReward.rewardType}</div>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Reward Account #</div>
+                <div>{selectedReward.rewardAccountNumber}</div>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Reward Flag</div>
+                <div>{selectedReward.rewardFlag}</div>
+              </div>
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Reward Name</div>
+                <div class="slds-truncate" title={selectedReward.name}>{selectedReward.name}</div>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Description</div>
+                <div class="slds-m-top_x-small">{selectedReward.description}</div>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Total Paid</div>
+                <lightning-formatted-number value={selectedReward.rewardTotalAmountPaid} maximum-fraction-digits="2"></lightning-formatted-number>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Mailing Date</div>
+                <lightning-formatted-date-time value={selectedReward.rewardMailingDate}></lightning-formatted-date-time>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Value Type</div>
+                <div>{selectedReward.rewardValueType}</div>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Reversal Flag</div>
+                <div>{selectedReward.rewardReverseFlag}</div>
+              </div>
+
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Notes</div>
+                <div class="slds-m-top_xx-small">{selectedReward.rewardNotes}</div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- ========================= Account List Header ========================= -->
+          <div class="slds-m-bottom_medium">
+            <div class="slds-p-around_small" style="background:#dddbda;">
+              <h2 class="slds-text-heading_small">Account List</h2>
+            </div>
+          </div>
+
+          <!-- ========================= ACCOUNT GROUPINGS ========================= -->
+          <template for:each={selectedReward.groupings} for:item="grp">
+            <article key={grp._key} class="slds-m-top_large">
+
+              <div class="slds-m-bottom_small">
+                <template for:each={grp.accounts} for:item="acc">
+                  <div key={acc._key}
+                       class="slds-grid slds-wrap slds-gutters slds-border_bottom slds-p-vertical_x-small slds-p-horizontal_small">
+
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                      <div class="slds-text-title_caps">Account #</div>
+                      <div>•••• {acc.last4}</div>
+                    </div>
+
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                      <div class="slds-text-title_caps">Type</div>
+                      <div>{acc.type}</div>
+                    </div>
+
+                  </div>
+                </template>
+              </div>
+
+              <!-- ========================= CONDITIONS ========================= -->
+              <template for:each={grp.conditions} for:item="cond">
+                <section key={cond._key} class="slds-m-vertical_medium slds-border_bottom slds-p-vertical_small">
+
+                  <!-- CONDITION HEADER -->
+                  <div class="slds-m-bottom_x-small">
+                    <div class="condition-banner">
+                      <h3 class="condition-name-left">Condition: {cond.name}</h3>
+
+                      <div class="condition-record-right"
+                           data-id={cond.id}
+                           onclick={handleOpenConditionRecord}>
+                        {cond.recordName}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- CONDITION FIELDS -->
+                  <div class="slds-grid slds-wrap slds-gutters">
+
+                    <!-- LEFT -->
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                      <div class="slds-m-bottom_small"><div class="slds-text-title_caps">Condition Code</div><div>{cond.code}</div></div>
+
+                      <div class="slds-m-bottom_small">
+                        <div class="slds-text-title_caps">Condition Met</div>
+                        <span > {cond.isMet} 
+                          <!-- <template if:true={cond.isMet}>Met</template>
+                          <template if:false={cond.isMet}>Not Met</template> -->
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- RIGHT -->
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+
+                      <div class="slds-m-bottom_small">
+                        <div class="slds-text-title_caps">Account# </div>
+
+                        <template if:true={cond.accountLast4}>
+                          <div class="slds-text-heading_small">•••• {cond.accountLast4}</div>
+                        </template>
+
+                        <template if:false={cond.accountLast4}>
+                          <div class="slds-text-color_weak">—</div>
+                        </template>
+                      </div>
+
+                      <div class="slds-m-bottom_small"><div class="slds-text-title_caps">Description</div><div>{cond.description}</div></div>
+
+                    </div>
+
+                  </div>
+
+                  <!-- ========================= RULE SETS ========================= -->
+                  <template if:true={cond.ruleSets}>
+                    <template for:each={cond.ruleSets} for:item="rs">
+                      <div key={rs._key} class="slds-m-vertical_small">
+
+                        <!-- ========================= RULES ========================= -->
+                        <template for:each={rs.rules} for:item="rl">
+
+                          <!-- ⭐⭐⭐ RULE HEADER ⭐⭐⭐ -->
+                          <div key={rl._key} class="slds-m-bottom_small">
+                            <div
+                              class="slds-grid slds-wrap slds-grid_align-spread slds-p-around_small"
+                              style="background:#f3f2f2; border-radius:.25rem;">
+
+                              <!-- LEFT -->
+                              <div class="slds-col slds-grow">
+                                <h3 class="slds-text-heading_small slds-m-vertical_none">
+                                  Rule:&nbsp;
+
+                                  <span style="color:#0176d3; cursor:pointer; font-weight:bold;"
+                                        data-id={rl.recordId}
+                                        onclick={handleOpenRuleRecord}>
+                                    { rl.recordName}
+                                  </span>
+                                </h3>
+                              </div>
+
+                              <!-- RIGHT -->
+                              <div class="slds-col slds-shrink" style="text-align:right;">
+                                <span style="color:#0176d3; cursor:pointer; font-weight:600;"
+                                      data-id={rs.ruleSetId}
+                                      onclick={handleOpenRuleSetRecord}>
+                                  {rs.name}
+                                </span>
+
+                                <span>&nbsp;/&nbsp;</span>
+
+                                <span style="color:#0176d3; cursor:pointer; font-weight:600;"
+                                      data-id={rl.recordId}
+                                      onclick={handleOpenRuleRecord}>
+                                  {rl.recordName}
+                                </span>
+                              </div>
+
+                            </div>
+                          </div>
+
+                          <!-- ⭐⭐⭐ RULE DETAILS ⭐⭐⭐ -->
+                          <div key={rl.detailsKey}
+                               class="slds-grid slds-wrap slds-gutters slds-m-bottom_small">
+
+                            <!-- LEFT -->
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+
+                              <div class="slds-m-bottom_x-small">
+                                <div class="slds-text-title_caps">Rule Code</div>
+                                <div>{rl.code}</div>
+                              </div>
+
+                              <div class="slds-m-bottom_x-small">
+                                <div class="slds-text-title_caps">Target Value</div>
+                                <div>
+                                  <template if:true={rl.target}>{rl.target}</template>
+                                  <template if:false={rl.target}>—</template>
+                                </div>
+                              </div>
+
+                              <div class="slds-m-bottom_x-small">
+                                <div class="slds-text-title_caps">Progress Type</div>
+                                <div>{rl.type}</div>
+                              </div>
+
+                            </div>
+
+                            <!-- RIGHT -->
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+
+                              <div class="slds-m-bottom_x-small">
+                                <div class="slds-text-title_caps">Rule Name</div>
+                                <div class="slds-truncate">{rl.name}</div>
+                              </div>
+
+                              <div class="slds-m-bottom_x-small">
+                                <div class="slds-text-title_caps">Rule Description</div>
+                                <div class="slds-m-top_xx-small">{rl.description}</div>
+                              </div>
+
+                            </div>
+                          </div>
+
+                          <!-- ⭐⭐⭐ PROGRESS SECTION ⭐⭐⭐ -->
+                          <div key={rl.progressKey}>
+
+                            <!-- STATIC BANNER -->
+                            <div class="slds-m-bottom_x-small">
+                              <div class="slds-p-around_x-small"
+                                   style="background:#dddbda; display:flex; justify-content:space-between; align-items:center;">
+
+                                <div style="display:flex; align-items:center; gap:.5rem;">
+                                  <lightning-icon icon-name="utility:success" size="x-small"></lightning-icon>
+                                  <h3 class="slds-text-title_caps slds-m-vertical_none">Progress</h3>
+                                </div>
+
+                                <template if:true={rl.firstProgressId}>
+                                  <span class="slds-text-link"
+                                        style="cursor:pointer; color:#0176d3; font-weight:600;"
+                                        data-id={rl.firstProgressId}
+                                        onclick={handleOpenProgressRecord}>
+                                    {rl.firstProgressRecordName}
+                                  </span>
+                                </template>
+
+                              </div>
+                            </div>
+
+                            <!-- PROGRESS ROWS -->
+                            <template if:true={rl.progressList}>
+                              <template for:each={rl.progressList} for:item="pg">
+
+                                  <div key={pg._key} class="slds-p-vertical_x-small">
+                                    <div class="slds-grid slds-wrap slds-gutters">
+
+                                    <!-- LEFT -->
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                      <div class="slds-m-bottom_x-small">
+                                        <div class="slds-text-title_caps">Actual Value</div>
+                                        <div>
+                                          <template if:true={pg.actual}>{pg.actual}</template>
+                                          <template if:false={pg.actual}>—</template>
+                                        </div>
+                                      </div>
+
+                                      <div class="slds-m-bottom_x-small">
+                                        <div class="slds-text-title_caps">Rule Pass Flag</div>
+                                        <span>{pg.passFlag}
+                                          <!-- <template if:true={pg.passFlag}>Passed</template>
+                                          <template if:false={pg.passFlag}>Not Passed</template> -->
+                                        </span>
+                                      </div>
+
+                                      <div class="slds-m-bottom_x-small">
+                                        <div class="slds-text-title_caps">Start Date</div>
+                                        <lightning-formatted-date-time value={pg.start}></lightning-formatted-date-time>
+                                      </div>
+
+                                    </div>
+
+                                    <!-- RIGHT -->
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2" style="margin-top:-0.75rem;">
+                                      <div class="slds-m-bottom_x-small">
+                                        <div class="slds-text-title_caps">Rule Details</div>
+                                        <div>{pg.details}</div>
+                                      </div>
+
+                                      <div class="slds-m-bottom_x-small">
+                                        <div class="slds-text-title_caps">Passed Date</div>
+                                        <lightning-formatted-date-time value={pg.passedDate}></lightning-formatted-date-time>
+                                      </div>
+
+                                      <div class="slds-m-bottom_x-small">
+                                        <div class="slds-text-title_caps">End Date</div>
+                                        <lightning-formatted-date-time value={pg.end}></lightning-formatted-date-time>
+                                      </div>
+
+                                    </div>
+
+                                  </div>
+                                </div>
+
+                              </template>
+                            </template>
+
+                            <template if:false={rl.progressList}>
+                              <div class="slds-text-color_weak">No progress yet</div>
+                            </template>
+
+                          </div>
+
+                        </template>
+
+                      </div>
+                    </template>
+                  </template>
+
+                  <template if:false={cond.ruleSets}>
+                    <div class="slds-text-color_weak">No rule sets under this condition</div>
+                  </template>
+
+                </section>
+              </template>
+
+            </article>
+          </template>
+
+        </section>
+      </template>
+
+      <!-- ========================= EMPTY STATES ========================= -->
+      <template if:false={selectedReward}>
+        <template if:true={hasOptions}>
+          <div class="slds-text-color_weak slds-text-align_center">Select a reward above to see details.</div>
+        </template>
+
+        <template if:false={hasOptions}>
+          <div class="slds-text-color_weak slds-text-align_center">No rewards available.</div>
+        </template>
+      </template>
+
+    </div>
+  </lightning-card>
+</template>
