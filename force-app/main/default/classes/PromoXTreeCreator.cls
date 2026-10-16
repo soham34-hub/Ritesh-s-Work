@@ -54,7 +54,9 @@ public with sharing class PromoXTreeCreator {
     	apiRecords = [SELECT Id,API_RADS_Transaction_Log__c,Account_Last_4__c,Account_Type__c,CIF__c,
                     Enroll_Teammate_Id__c,Enrollment_Channel__c,Enrollment_Date__c,Enrollment_Flag__c,Force_Enroll_Case_Number__c,Offer_Code__c,
                     Offer_Description__c,Offer_Name__c,Offer_Status__c,Offer_Type__c,Promo_Code__c,Promo_End_Date__c,Promo_Key__c,Promo_Start_Date__c,
-                    T_C_Client_Accepted_Timestamp__c,T_C_PDF_link__c
+                    T_C_Client_Accepted_Timestamp__c,T_C_PDF_link__c,
+                    Eligibility_Failure_Reason__c,Eligibility_Failure_Code__c,
+                    Eligibility_Failure_Reason_Date__c,Promotion_Eligibility_Unique_Id__c
                     FROM API_Promotion_Enrollment__c WHERE API_RADS_Transaction_Log__c =: transactionLogId]; 
     	data.apiEnrollemtRecords = apiRecords;
     	data.enrollmentRecords = permRecords;
