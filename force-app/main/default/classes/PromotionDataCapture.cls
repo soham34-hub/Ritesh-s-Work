@@ -116,8 +116,9 @@ public class PromotionDataCapture {
             }else{
             	enrollmentCrossRecords.put(iRecord.Id,createEnrollment(iRecord,null));
             }
-        upsert enrollmentCrossRecords.values();
+
     }
+        upsert enrollmentCrossRecords.values();
 }
     public static void rewards(){
     	List<API_Promotion_Rewards__c> apiRecords = new List<API_Promotion_Rewards__c>();
@@ -357,6 +358,21 @@ public class PromotionDataCapture {
         newRecord.Error_Code__c = apiLog[0].Error_Code__c;
         newRecord.Error_Message__c = apiLog[0].Error_Message__c;
         newRecord.Force_Enrollment_Case_Number__c =  apiRecord.Force_Enroll_Case_Number__c;
+        // --- Eligibility Failure evidence (Refresh and Retain) ---
+        // The four eligibility values all belong to one evaluation, so they are copied
+        // together as a single set. If the incoming API record carries no evaluation at
+        // all, the four fields are left unassigned, so the values already stored on the
+        // permanent record are retained across the refresh instead of being cleared.
+        Boolean hasEligibilityEvaluation = String.isNotBlank(apiRecord.Eligibility_Failure_Reason__c)
+            || String.isNotBlank(apiRecord.Eligibility_Failure_Code__c)
+            || String.isNotBlank(apiRecord.Promotion_Eligibility_Unique_Id__c)
+            || apiRecord.Eligibility_Failure_Reason_Date__c != null;
+        if(hasEligibilityEvaluation){
+            newRecord.Eligibility_Failure_Reason__c = apiRecord.Eligibility_Failure_Reason__c;
+            newRecord.Eligibility_Failure_Code__c = apiRecord.Eligibility_Failure_Code__c;
+            newRecord.Eligibility_Failure_Reason_Date__c = apiRecord.Eligibility_Failure_Reason_Date__c;
+            newRecord.Promotion_Eligibility_Unique_Id__c = apiRecord.Promotion_Eligibility_Unique_Id__c;
+        }
         return newRecord;
     }
     public static Promotion_Rewards__c createReward(API_Promotion_Rewards__c apiRecordpr,String existingRecordId) {
