@@ -252,7 +252,9 @@ public class PromotionDataSyncService {
                    Enroll_Teammate_Id__c, Enrollment_Channel__c, Enrollment_Date__c, Enrollment_Flag__c,
                    Force_Enroll_Case_Number__c, Offer_Code__c, Offer_Description__c, Offer_Name__c,
                    Offer_Status__c, Offer_Type__c, Promo_Code__c, Promo_End_Date__c, Promo_Key__c,
-                   Promo_Start_Date__c, T_C_Client_Accepted_Timestamp__c, T_C_PDF_link__c
+                   Promo_Start_Date__c, T_C_Client_Accepted_Timestamp__c, T_C_PDF_link__c,
+                   Eligibility_Failure_Reason__c, Eligibility_Failure_Code__c,
+                   Eligibility_Failure_Reason_Date__c, Promotion_Eligibility_Unique_Id__c
             FROM API_Promotion_Enrollment__c WHERE API_RADS_Transaction_Log__c IN :logIds
 
         ]) { addToMap(bd.apiEnrollByLogId, rec.API_RADS_Transaction_Log__c, rec); }
@@ -636,6 +638,22 @@ public class PromotionDataSyncService {
         newRecord.T_C_Client_Accepted_Timestamp__c = apiRecord.T_C_Client_Accepted_Timestamp__c;
         newRecord.T_C_PDF_link__c                  = apiRecord.T_C_PDF_link__c;
         newRecord.Force_Enrollment_Case_Number__c  = apiRecord.Force_Enroll_Case_Number__c;
+
+        // --- Eligibility Failure evidence (Refresh and Retain) ---
+        Boolean hasEligibilityEvaluation =
+               String.isNotBlank(apiRecord.Eligibility_Failure_Reason__c)
+            || String.isNotBlank(apiRecord.Eligibility_Failure_Code__c)
+            || String.isNotBlank(apiRecord.Promotion_Eligibility_Unique_Id__c)
+            || apiRecord.Eligibility_Failure_Reason_Date__c != null;
+
+        if (hasEligibilityEvaluation) {
+
+            newRecord.Eligibility_Failure_Reason__c      = apiRecord.Eligibility_Failure_Reason__c;
+            newRecord.Eligibility_Failure_Code__c        = apiRecord.Eligibility_Failure_Code__c;
+            newRecord.Eligibility_Failure_Reason_Date__c = apiRecord.Eligibility_Failure_Reason_Date__c;
+            newRecord.Promotion_Eligibility_Unique_Id__c = apiRecord.Promotion_Eligibility_Unique_Id__c;
+
+        }
 
         if (!apiLog.isEmpty()) {
 
