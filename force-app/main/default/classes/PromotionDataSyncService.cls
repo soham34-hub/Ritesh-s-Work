@@ -253,6 +253,7 @@ public class PromotionDataSyncService {
                    Force_Enroll_Case_Number__c, Offer_Code__c, Offer_Description__c, Offer_Name__c,
                    Offer_Status__c, Offer_Type__c, Promo_Code__c, Promo_End_Date__c, Promo_Key__c,
                    Promo_Start_Date__c, T_C_Client_Accepted_Timestamp__c, T_C_PDF_link__c,
+                   Net_New_Money__c, Offer_Prefix__c,
                    Eligibility_Failure_Reason__c, Eligibility_Failure_Code__c,
                    Eligibility_Failure_Reason_Date__c, Promotion_Eligibility_Unique_Id__c
             FROM API_Promotion_Enrollment__c WHERE API_RADS_Transaction_Log__c IN :logIds
@@ -280,6 +281,7 @@ public class PromotionDataSyncService {
         for (API_Promotion_Conditions__c rec : [
 
             SELECT Id, API_Account__c, API_RADS_Transaction_Log__c, Condition_Code__c,
+                   Monitor_End_Date__c,
                    Condition_Description__c, Condition_Met__c, Condition_Name__c
             FROM API_Promotion_Conditions__c WHERE API_RADS_Transaction_Log__c IN :logIds
 
@@ -638,6 +640,9 @@ public class PromotionDataSyncService {
         newRecord.T_C_Client_Accepted_Timestamp__c = apiRecord.T_C_Client_Accepted_Timestamp__c;
         newRecord.T_C_PDF_link__c                  = apiRecord.T_C_PDF_link__c;
         newRecord.Force_Enrollment_Case_Number__c  = apiRecord.Force_Enroll_Case_Number__c;
+        // DR-4350-1 (US2219217): Net New Money fields
+        newRecord.Net_New_Money__c                 = apiRecord.Net_New_Money__c;
+        newRecord.Offer_Prefix__c                  = apiRecord.Offer_Prefix__c;
 
         // --- Eligibility Failure evidence (Refresh and Retain) ---
         Boolean hasEligibilityEvaluation =
@@ -749,6 +754,7 @@ public class PromotionDataSyncService {
         newRecord.Condition_Description__c    = apiRecord.Condition_Description__c;
         newRecord.Condition_Met__c            = apiRecord.Condition_Met__c;
         newRecord.Condition_Name__c           = apiRecord.Condition_Name__c;
+        newRecord.Monitor_End_Date__c         = apiRecord.Monitor_End_Date__c; // DR-4350-1 (US2219217)
 
     
 

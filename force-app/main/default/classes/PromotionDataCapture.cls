@@ -358,6 +358,9 @@ public class PromotionDataCapture {
         newRecord.Error_Code__c = apiLog[0].Error_Code__c;
         newRecord.Error_Message__c = apiLog[0].Error_Message__c;
         newRecord.Force_Enrollment_Case_Number__c =  apiRecord.Force_Enroll_Case_Number__c;
+        // DR-4350-1 (US2219217): Net New Money fields
+        newRecord.Net_New_Money__c = apiRecord.Net_New_Money__c;
+        newRecord.Offer_Prefix__c = apiRecord.Offer_Prefix__c;
         // --- Eligibility Failure evidence (Refresh and Retain) ---
         // The four eligibility values all belong to one evaluation, so they are copied
         // together as a single set. If the incoming API record carries no evaluation at
@@ -443,6 +446,7 @@ public class PromotionDataCapture {
         newRecord.Condition_Description__c = apiRecord.Condition_Description__c;
         newRecord.Condition_Met__c = apiRecord.Condition_Met__c;
         newRecord.Condition_Name__c = apiRecord.Condition_Name__c;
+        newRecord.Monitor_End_Date__c = apiRecord.Monitor_End_Date__c; // DR-4350-1 (US2219217)
         //set lookup to parent
         newRecord.Promotion_account__c =  accountCrossRecords.get(apiRecord.API_Account__c).Id;
         return newRecord;

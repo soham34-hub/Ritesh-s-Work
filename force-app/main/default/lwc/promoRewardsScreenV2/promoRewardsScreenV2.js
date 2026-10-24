@@ -153,8 +153,25 @@ wiredRewardData(result) {
                             const pg = pgWrap.progress;
                             const pass = !!pg.Rule_Pass_Flag__c;
 
+                            // DR-4350-3 (US2219224): supporting transactions under this progress row
+                            const transactions = ensureArray(pgWrap.transactionList).map((t, ti) => ({
+                                _key: `${pg.Id}-txn-${ti}`,
+                                id: t.Id,
+                                date: t.Transaction_Date__c,
+                                amount: t.Transaction_Amount__c,
+                                currency: t.Transaction_Currency__c,
+                                currencyCode: (t.Transaction_Currency__c && /^[A-Z]{3}$/.test(t.Transaction_Currency__c))
+                                    ? t.Transaction_Currency__c : 'USD',
+                                debitCredit: t.Transaction_Debit_Credit_Code__c,
+                                code: t.Transaction_Code__c,
+                                channel: t.Transaction_Channel__c,
+                                reference: t.Transaction_Reference_Id_2__c || t.Transaction_Reference_Id__c
+                            }));
+
                             return {
                                 _key: `${id}-prog-${pi}`,
+                                transactions,
+                                hasTransactions: transactions.length > 0,
                                 progressId: pg.Id,
                                 progressRecordName: pg.Name,
                                 actual: pg.Actual_Value__c,
@@ -203,6 +220,7 @@ wiredRewardData(result) {
                     recordName: cond.Name,
                     code: cond.Condition_Code__c,
                     description: cond.Condition_Description__c,
+                    monitorEndDate: cond.Monitor_End_Date__c, // DR-4350-1/3
                     isMet: cond.Condition_Met__c,
                     metBadgeClass: `slds-badge ${cond.Condition_Met__c ? 'slds-theme_success' : 'slds-theme_error'}`,
                     accountLast4,
@@ -217,9 +235,20 @@ wiredRewardData(result) {
             });
         });
 
+        // DR-4350-1/3: offer-level NNM values from the parent enrollment (shown only when populated)
+        const enr = r.Promotion_Enrollment_Number__r || {};
+        const nnmRaw = enr.Net_New_Money__c;
+        const hasNetNewMoney = nnmRaw !== undefined && nnmRaw !== null && String(nnmRaw).trim() !== '';
+        const netNewMoneyIsNumeric = hasNetNewMoney && !isNaN(Number(nnmRaw));
+
         return {
             id,
             recordName: r.Name,
+            offerPrefix: enr.Offer_Prefix__c,
+            netNewMoney: nnmRaw,
+            hasNetNewMoney,
+            netNewMoneyIsNumeric,
+            netNewMoneyNumber: netNewMoneyIsNumeric ? Number(nnmRaw) : null,
             recName: r.Reward_Name__c,
             rewardCode: r.Reward_Code__c,
             rewardStatus: r.Reward_Status__c,

@@ -85,6 +85,26 @@
                 <div class="slds-text-title_caps">Reward Flag</div>
                 <div>{selectedReward.rewardFlag}</div>
               </div>
+
+              <!-- DR-4350-1/3: Offer Prefix and Net New Money (shown only when populated) -->
+              <template if:true={selectedReward.offerPrefix}>
+                <div class="slds-m-bottom_small">
+                  <div class="slds-text-title_caps">Offer Prefix</div>
+                  <div>{selectedReward.offerPrefix}</div>
+                </div>
+              </template>
+
+              <template if:true={selectedReward.hasNetNewMoney}>
+                <div class="slds-m-bottom_small">
+                  <div class="slds-text-title_caps">Net New Money</div>
+                  <template if:true={selectedReward.netNewMoneyIsNumeric}>
+                    <lightning-formatted-number value={selectedReward.netNewMoneyNumber} format-style="currency" currency-code="USD"></lightning-formatted-number>
+                  </template>
+                  <template if:false={selectedReward.netNewMoneyIsNumeric}>
+                    <div>{selectedReward.netNewMoney}</div>
+                  </template>
+                </div>
+              </template>
             </div>
 
             <!-- RIGHT COLUMN -->
@@ -190,6 +210,14 @@
                           <template if:false={cond.isMet}>Not Met</template> -->
                         </span>
                       </div>
+
+                      <!-- DR-4350-1/3: Monitor End Date (shown only when populated) -->
+                      <template if:true={cond.monitorEndDate}>
+                        <div class="slds-m-bottom_small">
+                          <div class="slds-text-title_caps">Monitor End Date</div>
+                          <lightning-formatted-date-time value={cond.monitorEndDate} time-zone="UTC"></lightning-formatted-date-time>
+                        </div>
+                      </template>
                     </div>
 
                     <!-- RIGHT -->
@@ -380,6 +408,39 @@
                                     </div>
 
                                   </div>
+
+                                  <!-- DR-4350-3 (US2219224): SUPPORTING TRANSACTIONS (shown only when RADS sends them) -->
+                                  <template if:true={pg.hasTransactions}>
+                                    <div class="slds-m-top_x-small slds-scrollable_x">
+                                      <div class="slds-text-title_caps slds-m-bottom_xx-small">Supporting Transactions</div>
+                                      <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                                        <thead>
+                                          <tr class="slds-line-height_reset">
+                                            <th scope="col"><div class="slds-truncate" title="Date">Date</div></th>
+                                            <th scope="col"><div class="slds-truncate" title="Amount">Amount</div></th>
+                                            <th scope="col"><div class="slds-truncate" title="Debit/Credit">Debit/Credit</div></th>
+                                            <th scope="col"><div class="slds-truncate" title="Code">Code</div></th>
+                                            <th scope="col"><div class="slds-truncate" title="Channel">Channel</div></th>
+                                            <th scope="col"><div class="slds-truncate" title="Currency">Currency</div></th>
+                                            <th scope="col"><div class="slds-truncate" title="Reference">Reference</div></th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          <template for:each={pg.transactions} for:item="txn">
+                                            <tr key={txn._key}>
+                                              <td><lightning-formatted-date-time value={txn.date} time-zone="UTC"></lightning-formatted-date-time></td>
+                                              <td><lightning-formatted-number value={txn.amount} format-style="currency" currency-code={txn.currencyCode}></lightning-formatted-number></td>
+                                              <td>{txn.debitCredit}</td>
+                                              <td>{txn.code}</td>
+                                              <td>{txn.channel}</td>
+                                              <td>{txn.currency}</td>
+                                              <td>{txn.reference}</td>
+                                            </tr>
+                                          </template>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </template>
                                 </div>
 
                               </template>
