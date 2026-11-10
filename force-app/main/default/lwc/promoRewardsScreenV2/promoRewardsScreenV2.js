@@ -153,25 +153,8 @@ wiredRewardData(result) {
                             const pg = pgWrap.progress;
                             const pass = !!pg.Rule_Pass_Flag__c;
 
-                            // DR-4350-3 (US2219224): supporting transactions under this progress row
-                            const transactions = ensureArray(pgWrap.transactionList).map((t, ti) => ({
-                                _key: `${pg.Id}-txn-${ti}`,
-                                id: t.Id,
-                                date: t.Transaction_Date__c,
-                                amount: t.Transaction_Amount__c,
-                                currency: t.Transaction_Currency__c,
-                                currencyCode: (t.Transaction_Currency__c && /^[A-Z]{3}$/.test(t.Transaction_Currency__c))
-                                    ? t.Transaction_Currency__c : 'USD',
-                                debitCredit: t.Transaction_Debit_Credit_Code__c,
-                                code: t.Transaction_Code__c,
-                                channel: t.Transaction_Channel__c,
-                                reference: t.Transaction_Reference_Id_2__c || t.Transaction_Reference_Id__c
-                            }));
-
                             return {
                                 _key: `${id}-prog-${pi}`,
-                                transactions,
-                                hasTransactions: transactions.length > 0,
                                 progressId: pg.Id,
                                 progressRecordName: pg.Name,
                                 actual: pg.Actual_Value__c,

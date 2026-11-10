@@ -13,7 +13,6 @@ public with sharing class PromoXRewardsController {
         Map<Id, List<Promotion_Rule_Set__c>> ruleSetMap = new Map<Id, List<Promotion_Rule_Set__c>>();
         Map<Id, List<Promotion_Rule__c>> rulesMap = new Map<Id, List<Promotion_Rule__c>>();
         Map<Id, List<Promotion_Rule_Progress__c>> progressMap = new Map<Id, List<Promotion_Rule_Progress__c>>();
-        Map<Id, List<Promotion_Account_Transactions__c>> transactionMap = new Map<Id, List<Promotion_Account_Transactions__c>>(); // DR-4350-3
 
         RewardMassData rewardTree = new RewardMassData();
 
@@ -64,16 +63,6 @@ public with sharing class PromoXRewardsController {
             WHERE Case_Number__c = :caseId
         ];
 
-        // DR-4350-3 (US2219224): supporting transactions, shown under each progress row
-        rewardTree.transactionList = [
-            SELECT Id, Name, Case_Number__c, Promotion_Rule_Progress__c, Transaction_Date__c, Transaction_Amount__c,
-                   Transaction_Debit_Credit_Code__c, Transaction_Code__c, Transaction_Channel__c,
-                   Transaction_Currency__c, Transaction_Reference_Id__c, Transaction_Reference_Id_2__c
-            FROM Promotion_Account_Transactions__c
-            WHERE Case_Number__c = :caseId
-            ORDER BY Transaction_Date__c ASC
-        ];
-
         // ==============================
         // 2) Build maps with null safety
         // ==============================
@@ -117,14 +106,6 @@ public with sharing class PromoXRewardsController {
             Id key = pr.Promotion_Rule__c;
             if (!progressMap.containsKey(key)) progressMap.put(key, new List<Promotion_Rule_Progress__c>());
             progressMap.get(key).add(pr);
-        }
-
-        // DR-4350-3: group supporting transactions by their progress record
-        for (Promotion_Account_Transactions__c txn : rewardTree.transactionList) {
-            if (txn == null || txn.Promotion_Rule_Progress__c == null) continue;
-            Id key = txn.Promotion_Rule_Progress__c;
-            if (!transactionMap.containsKey(key)) transactionMap.put(key, new List<Promotion_Account_Transactions__c>());
-            transactionMap.get(key).add(txn);
         }
 
         // ==============================
@@ -184,10 +165,6 @@ public with sharing class PromoXRewardsController {
                                 for (Promotion_Rule_Progress__c pg : plist) {
                                     RuleProgress prog = new RuleProgress();
                                     prog.progress = pg;
-
-                                    // DR-4350-3: supporting transactions for this progress row (0..n)
-                                    List<Promotion_Account_Transactions__c> txns = transactionMap.get(pg.Id);
-                                    if (txns != null) prog.transactionList = txns;
                                     ruleWrap.progressList.add(prog);
                                 }
                             }
@@ -235,7 +212,6 @@ public with sharing class PromoXRewardsController {
         @AuraEnabled public List<Promotion_Rule_Set__c> ruleSetList = new List<Promotion_Rule_Set__c>();
         @AuraEnabled public List<Promotion_Rule__c> ruleList = new List<Promotion_Rule__c>();
         @AuraEnabled public List<Promotion_Rule_Progress__c> progressList = new List<Promotion_Rule_Progress__c>();
-        @AuraEnabled public List<Promotion_Account_Transactions__c> transactionList = new List<Promotion_Account_Transactions__c>(); // DR-4350-3
     }
 
     // Top-level DTO returned to LWC
@@ -271,7 +247,6 @@ public with sharing class PromoXRewardsController {
 
     public class RuleProgress {
         @AuraEnabled public Promotion_Rule_Progress__c progress = new Promotion_Rule_Progress__c();
-        @AuraEnabled public List<Promotion_Account_Transactions__c> transactionList = new List<Promotion_Account_Transactions__c>(); // DR-4350-3
     }
 
 public Class promOffers{

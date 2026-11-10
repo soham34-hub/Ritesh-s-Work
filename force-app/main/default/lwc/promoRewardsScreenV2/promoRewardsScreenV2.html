@@ -409,38 +409,6 @@
 
                                   </div>
 
-                                  <!-- DR-4350-3 (US2219224): SUPPORTING TRANSACTIONS (shown only when RADS sends them) -->
-                                  <template if:true={pg.hasTransactions}>
-                                    <div class="slds-m-top_x-small slds-scrollable_x">
-                                      <div class="slds-text-title_caps slds-m-bottom_xx-small">Supporting Transactions</div>
-                                      <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
-                                        <thead>
-                                          <tr class="slds-line-height_reset">
-                                            <th scope="col"><div class="slds-truncate" title="Date">Date</div></th>
-                                            <th scope="col"><div class="slds-truncate" title="Amount">Amount</div></th>
-                                            <th scope="col"><div class="slds-truncate" title="Debit/Credit">Debit/Credit</div></th>
-                                            <th scope="col"><div class="slds-truncate" title="Code">Code</div></th>
-                                            <th scope="col"><div class="slds-truncate" title="Channel">Channel</div></th>
-                                            <th scope="col"><div class="slds-truncate" title="Currency">Currency</div></th>
-                                            <th scope="col"><div class="slds-truncate" title="Reference">Reference</div></th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          <template for:each={pg.transactions} for:item="txn">
-                                            <tr key={txn._key}>
-                                              <td><lightning-formatted-date-time value={txn.date} time-zone="UTC"></lightning-formatted-date-time></td>
-                                              <td><lightning-formatted-number value={txn.amount} format-style="currency" currency-code={txn.currencyCode}></lightning-formatted-number></td>
-                                              <td>{txn.debitCredit}</td>
-                                              <td>{txn.code}</td>
-                                              <td>{txn.channel}</td>
-                                              <td>{txn.currency}</td>
-                                              <td>{txn.reference}</td>
-                                            </tr>
-                                          </template>
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </template>
                                 </div>
 
                               </template>
