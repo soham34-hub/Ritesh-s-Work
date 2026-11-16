@@ -25,6 +25,7 @@ public with sharing class PromoXRewardsController {
                    Reward_Payment_Date__c, Reward_Code__c, Reward_Total_Amount_Paid__c, Reward_Mailing_Date__c,
                    Promotion_Enrollment_Number__r.Net_New_Money__c, Promotion_Enrollment_Number__r.Offer_Prefix__c,
                    API_RADS_Transaction_Log__c, Promotion_Enrollment_Number__r.Offer_Code__c,
+                   Reward_Order__c, Bonus_Interest_Indicator__c, Account_Product_Name__c,
                    Reward_Value_Type__c, Reward_Reversal_Flag__c, Reward_Payment_Amount__c
             FROM Promotion_Rewards__c
             WHERE Case_Number__c = :caseId

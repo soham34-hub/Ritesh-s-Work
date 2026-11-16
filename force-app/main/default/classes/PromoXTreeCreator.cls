@@ -106,6 +106,7 @@ public with sharing class PromoXTreeCreator {
          //what is Reward_Account__c field is this lookup to account?
 		 permRecords = [SELECT Id,Reward_Code__c,Promotion_Enrollment_Number__c FROM Promotion_Rewards__c where Case_Number__c =: caseNumber];
          apiRecords = [SELECT Id,API_Promotion_Enrollment__c,API_RADS_Transaction_Log__c,Force_Payout_Flag__c,Reverse_Notes__c,Reward_Account__c,
+                       Reward_Order__c,Is_Bonus_Reward__c,
                        Reward_Code__c,Reward_Description__c,Reward_Mailing_Date__c,Reward_Name__c,Reward_Payment_Amount__c,Reward_Payment_Date__c,
                        Reward_Reversal_Flag__c,Reward_Status__c,Reward_Total_Amount_Paid__c,Reward_Type__c,Reward_Value_Type__c
                        FROM API_Promotion_Rewards__c WHERE API_RADS_Transaction_Log__c =: transactionLogId]; 

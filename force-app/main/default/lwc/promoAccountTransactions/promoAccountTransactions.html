@@ -1,0 +1,54 @@
+<template>
+  <lightning-card>
+    <div class="slds-p-around_medium">
+
+      <!-- ========================= Account Transactions Selector (DR-4350-7/8) ========================= -->
+      <div class="slds-m-bottom_medium">
+        <div class="slds-grid slds-wrap slds-grid_align-center slds-m-bottom_x-small slds-align-middle">
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
+            <div class="slds-grid slds-align-middle slds-grid_align-center">
+              <lightning-icon icon-name="utility:choice" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+              <h3 class="slds-text-title_bold slds-m-vertical_none">Account Transactions</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="slds-grid slds-wrap slds-grid_align-center">
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4 picker-col">
+            <div class="picker-wrap">
+              <lightning-combobox
+                class="reward-picker"
+                name="rewardSelect"
+                variant="label-hidden"
+                placeholder="Select a reward…"
+                value={selectedRewardKey}
+                options={rewardOptions}
+                onchange={handleRewardChange}>
+              </lightning-combobox>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================= Promotion Account Transactions (DR-4350-9) ========================= -->
+      <template if:true={hasRows}>
+        <lightning-datatable
+          key-field="id"
+          data={rows}
+          columns={columns}
+          hide-checkbox-column>
+        </lightning-datatable>
+      </template>
+
+      <template if:false={hasRows}>
+        <template if:true={hasOptions}>
+          <div class="slds-text-color_weak slds-text-align_center">No transactions for the selected reward.</div>
+        </template>
+        <template if:false={hasOptions}>
+          <div class="slds-text-color_weak slds-text-align_center">No rewards available.</div>
+        </template>
+      </template>
+
+    </div>
+  </lightning-card>
+</template>

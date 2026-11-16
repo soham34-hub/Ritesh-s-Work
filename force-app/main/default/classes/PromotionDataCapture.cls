@@ -152,6 +152,22 @@ public class PromotionDataCapture {
          for(API_Account__c accRecord :apiAccountRecords){ // probably needs to be fixed?
              rewardCrossRecords.get(accRecord.API_Promotion_Rewards__c).Reward_Account__c = accRecord.Last_4__c;
          }
+        // DR-4350-6 (US2245835): Account Product Name on the reward, MultiP offers only
+        Map<String,String> offerPrefixByApiEnrollment = new Map<String,String>();
+        for(API_Promotion_Enrollment__c enr : dataSet.apiEnrollemtRecords){
+            offerPrefixByApiEnrollment.put(enr.Id, enr.Offer_Prefix__c);
+        }
+        Map<String,String> offerPrefixByApiReward = new Map<String,String>();
+        for(API_Promotion_Rewards__c iRecord : apiRecords){
+            offerPrefixByApiReward.put(iRecord.Id, offerPrefixByApiEnrollment.get(iRecord.API_Promotion_Enrollment__c));
+        }
+        for(API_Account__c accRecord : apiAccountRecords){
+            Promotion_Rewards__c reward = rewardCrossRecords.get(accRecord.API_Promotion_Rewards__c);
+            if(reward == null || !isMultiP(offerPrefixByApiReward.get(accRecord.API_Promotion_Rewards__c))) continue;
+            if(String.isBlank(reward.Account_Product_Name__c)){
+                reward.Account_Product_Name__c = accRecord.Account_Product_Name__c;
+            }
+        }
         upsert rewardCrossRecords.values();
     }     
     public static void accounts(){
@@ -424,6 +440,10 @@ public class PromotionDataCapture {
     newRecordpr.Reward_Total_Amount_Paid__c     = apiRecordpr.Reward_Total_Amount_Paid__c;
     newRecordpr.Reward_Type__c                  = apiRecordpr.Reward_Type__c;
     newRecordpr.Reward_Value_Type__c            = apiRecordpr.Reward_Value_Type__c;
+    // DR-4350-4 (US2245832): Reward Order as supplied by RADS (blank when not supplied)
+    newRecordpr.Reward_Order__c                 = apiRecordpr.Reward_Order__c;
+    // DR-4350-5 (US2245840): Bonus Interest Indicator - isBonusReward true = Y, false or blank = N
+    newRecordpr.Bonus_Interest_Indicator__c     = apiRecordpr.Is_Bonus_Reward__c == true ? 'Y' : 'N';
     //set the parent record 
      newRecordpr.Promotion_Enrollment_Number__c = enrollmentCrossRecords.get(apiRecordpr.API_Promotion_Enrollment__c).id;
     return newRecordpr;
@@ -541,8 +561,13 @@ public class PromotionDataCapture {
             
             return resultRecord;
         }
+    // DR-4350-6 (US2245835): MultiP is identified by RADS offerPrefix = MultiP
+    public static Boolean isMultiP(String offerPrefix){
+        return offerPrefix != null && offerPrefix.trim().equalsIgnoreCase('MultiP');
+    }
     public static list<API_Account__c> getAccounts(){
 		   return [SELECT Id,API_Promotion_Rewards__c,API_RADS_Transaction_Log__c,Account_Type__c,Last_4__c
+                      ,Account_Product_Name__c
                       FROM API_Account__c WHERE API_RADS_Transaction_Log__c =: transactionLogId]; 
      }    
  }

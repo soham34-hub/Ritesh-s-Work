@@ -247,6 +247,11 @@ wiredRewardData(result) {
             rewardValueType: r.Reward_Value_Type__c,
             rewardReverseFlag: r.Reward_Reversal_Flag__c,
             rewardNotes: r.Reverse_Notes__c,
+            // DR-4350-4/5/6: Reward Order, Bonus Interest Indicator (N when blank), Account Product Name (MultiP only)
+            rewardOrder: r.Reward_Order__c,
+            bonusInterestIndicator: r.Bonus_Interest_Indicator__c || 'N',
+            isMultiP: String(enr.Offer_Prefix__c || '').trim().toUpperCase() === 'MULTIP',
+            accountProductName: r.Account_Product_Name__c,
             groupings
         };
     }

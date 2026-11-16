@@ -149,6 +149,22 @@
 
           </div>
 
+          <!-- DR-4350-4/5: Reward Order and Bonus Interest Indicator (bottom of Reward Details) -->
+          <div class="slds-grid slds-wrap slds-gutters">
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Reward Order</div>
+                <div>{selectedReward.rewardOrder}</div>
+              </div>
+            </div>
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+              <div class="slds-m-bottom_small">
+                <div class="slds-text-title_caps">Bonus Interest Indicator</div>
+                <div>{selectedReward.bonusInterestIndicator}</div>
+              </div>
+            </div>
+          </div>
+
           <!-- ========================= Account List Header ========================= -->
           <div class="slds-m-bottom_medium">
             <div class="slds-p-around_small" style="background:#dddbda;">
@@ -174,6 +190,14 @@
                       <div class="slds-text-title_caps">Type</div>
                       <div>{acc.type}</div>
                     </div>
+
+                    <!-- DR-4350-6: Account Product Name (MultiP only) -->
+                    <template if:true={selectedReward.isMultiP}>
+                      <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                        <div class="slds-text-title_caps">Account Product Name</div>
+                        <div>{selectedReward.accountProductName}</div>
+                      </div>
+                    </template>
 
                   </div>
                 </template>

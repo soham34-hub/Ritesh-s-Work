@@ -266,6 +266,7 @@ public class PromotionDataSyncService {
                    Reverse_Notes__c, Reward_Account__c, Reward_Code__c, Reward_Description__c,
                    Reward_Mailing_Date__c, Reward_Name__c, Reward_Payment_Amount__c, Reward_Payment_Date__c,
                    Reward_Reversal_Flag__c, Reward_Status__c, Reward_Total_Amount_Paid__c,
+                   Reward_Order__c, Is_Bonus_Reward__c,
                    Reward_Type__c, Reward_Value_Type__c
             FROM API_Promotion_Rewards__c WHERE API_RADS_Transaction_Log__c IN :logIds
 
@@ -274,6 +275,7 @@ public class PromotionDataSyncService {
         for (API_Account__c rec : [
 
             SELECT Id, API_Promotion_Rewards__c, API_RADS_Transaction_Log__c, Account_Type__c, Last_4__c
+                   , Account_Product_Name__c
             FROM API_Account__c WHERE API_RADS_Transaction_Log__c IN :logIds
 
         ]) { addToMap(bd.apiAccountByLogId, rec.API_RADS_Transaction_Log__c, rec); }
@@ -521,6 +523,23 @@ public class PromotionDataSyncService {
 
         }
 
+        // DR-4350-6 (US2245835): Account Product Name on the reward, MultiP offers only
+        Map<String,String> offerPrefixByApiEnrollment = new Map<String,String>();
+        for (API_Promotion_Enrollment__c enr : dataSet.apiEnrollemtRecords) {
+            offerPrefixByApiEnrollment.put(enr.Id, enr.Offer_Prefix__c);
+        }
+        Map<String,String> offerPrefixByApiReward = new Map<String,String>();
+        for (API_Promotion_Rewards__c apiReward : dataSet.apiRewardRecords) {
+            offerPrefixByApiReward.put(apiReward.Id, offerPrefixByApiEnrollment.get(apiReward.API_Promotion_Enrollment__c));
+        }
+        for (API_Account__c accRecord : apiAccountRecords) {
+            Promotion_Rewards__c reward = rewardCrossRecords.get(accRecord.API_Promotion_Rewards__c);
+            if (reward == null || !isMultiP(offerPrefixByApiReward.get(accRecord.API_Promotion_Rewards__c))) continue;
+            if (String.isBlank(reward.Account_Product_Name__c)) {
+                reward.Account_Product_Name__c = accRecord.Account_Product_Name__c;
+            }
+        }
+
     }
  
     public void buildAccounts() {
@@ -704,6 +723,10 @@ public class PromotionDataSyncService {
         newRecordpr.Reward_Total_Amount_Paid__c = apiRecordpr.Reward_Total_Amount_Paid__c;
         newRecordpr.Reward_Type__c              = apiRecordpr.Reward_Type__c;
         newRecordpr.Reward_Value_Type__c        = apiRecordpr.Reward_Value_Type__c;
+        // DR-4350-4 (US2245832): Reward Order as supplied by RADS (blank when not supplied)
+        newRecordpr.Reward_Order__c             = apiRecordpr.Reward_Order__c;
+        // DR-4350-5 (US2245840): Bonus Interest Indicator - isBonusReward true = Y, false or blank = N
+        newRecordpr.Bonus_Interest_Indicator__c = apiRecordpr.Is_Bonus_Reward__c == true ? 'Y' : 'N';
 
         
 
@@ -915,6 +938,11 @@ public class PromotionDataSyncService {
 
     }
  
+    // DR-4350-6 (US2245835): MultiP is identified by RADS offerPrefix = MultiP
+    private static Boolean isMultiP(String offerPrefix) {
+        return offerPrefix != null && offerPrefix.trim().equalsIgnoreCase('MultiP');
+    }
+
 // addToMap
     private static void addToMap(Map<String,List<API_Promotion_Enrollment__c>> m, String k, API_Promotion_Enrollment__c r) {
         if (!m.containsKey(k)) m.put(k, new List<API_Promotion_Enrollment__c>()); m.get(k).add(r);
