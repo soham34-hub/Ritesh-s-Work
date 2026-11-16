@@ -7,9 +7,8 @@ import getRewardTransactions from '@salesforce/apex/PromoXAccountTransactionsCon
 // Align labels/order with the approved Account Transactions Tab wireframe.
 const COLUMNS = [
     { label: 'Transaction', fieldName: 'recordUrl', type: 'url', typeAttributes: { label: { fieldName: 'name' }, target: '_self' } },
-    { label: 'Transaction Reference Id', fieldName: 'referenceId' },
-    { label: 'Transaction Date', fieldName: 'transactionDate', type: 'date', typeAttributes: { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' } },
     { label: 'Transaction Amount', fieldName: 'amount', type: 'number', typeAttributes: { minimumFractionDigits: 2, maximumFractionDigits: 2 } },
+    { label: 'Transaction Date', fieldName: 'transactionDate', type: 'date', typeAttributes: { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' } },
     { label: 'Debit/Credit Code', fieldName: 'debitCredit' },
     { label: 'Transaction Code', fieldName: 'transactionCode' },
     { label: 'Account Number', fieldName: 'accountNumber' }
