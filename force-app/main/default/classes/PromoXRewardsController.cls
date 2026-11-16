@@ -24,6 +24,7 @@ public with sharing class PromoXRewardsController {
                    Reward_Account__c, Reward_Description__c, Reward_Name__c, Reward_Status__c, Reward_Type__c,
                    Reward_Payment_Date__c, Reward_Code__c, Reward_Total_Amount_Paid__c, Reward_Mailing_Date__c,
                    Promotion_Enrollment_Number__r.Net_New_Money__c, Promotion_Enrollment_Number__r.Offer_Prefix__c,
+                   API_RADS_Transaction_Log__c, Promotion_Enrollment_Number__r.Offer_Code__c,
                    Reward_Value_Type__c, Reward_Reversal_Flag__c, Reward_Payment_Amount__c
             FROM Promotion_Rewards__c
             WHERE Case_Number__c = :caseId
@@ -173,6 +174,9 @@ public with sharing class PromoXRewardsController {
                 }
             }
         }
+        // Reward-specific conditions: show each condition only under the reward it belongs to
+        applyRewardConditionOwnership(dataBundle, rewardTree, accountMap, conditionMap, ruleSetMap, rulesMap, progressMap);
+
         system.debug('Reward RewardAccountGroupingData ' + dataBundle.rewardList);
         //system.debug('Reward RewardAccountGroupingData ' dataBundle.RewardAccountGroupingData);');
        // system.debug('Reward AccountGroupingData ' dataBundle.AccountGroupingData);
@@ -196,6 +200,252 @@ public with sharing class PromoXRewardsController {
         }
         // NOTE: This method was not fully implemented in your original code.
         // Left in place for parity; safe and harmless as-is.
+    }
+
+    // =====================================================================
+    // Reward-specific condition ownership (Multi-Product / Tier fix)
+    // When several rewards share one Promotion Account record, all conditions
+    // were shown under the first reward and the other rewards were blank.
+    // The RADS staging (API_*) records keep the correct reward -> account ->
+    // condition link, so they are used to place each condition under its own
+    // reward. Single-reward Cases, and Cases without staging data, are not changed.
+    // =====================================================================
+
+    private static void applyRewardConditionOwnership(
+        RewardData dataBundle,
+        RewardMassData rewardTree,
+        Map<Id, List<Promotion_Account__c>> accountMap,
+        Map<Id, List<Promotion_Condition__c>> conditionMap,
+        Map<Id, List<Promotion_Rule_Set__c>> ruleSetMap,
+        Map<Id, List<Promotion_Rule__c>> rulesMap,
+        Map<Id, List<Promotion_Rule_Progress__c>> progressMap
+    ) {
+        if (dataBundle == null || dataBundle.rewardList == null || dataBundle.rewardList.size() < 2) return;
+
+        // 1) RADS logs used by the rewards on this Case
+        Set<Id> logIds = new Set<Id>();
+        for (RewardAccountGroupingData rag : dataBundle.rewardList) {
+            if (rag != null && rag.reward != null && rag.reward.API_RADS_Transaction_Log__c != null) {
+                logIds.add(rag.reward.API_RADS_Transaction_Log__c);
+            }
+        }
+        if (logIds.isEmpty()) return;
+
+        // 2) Staging keys per log and reward: "last4|conditionCode"
+        Map<Id, Map<String, Set<String>>> allowedByLog = loadStagingConditionKeys(logIds);
+        if (allowedByLog.isEmpty()) return;
+
+        // 3) Allowed condition keys per permanent reward
+        Map<Id, Set<String>> allowedByReward = new Map<Id, Set<String>>();
+        for (RewardAccountGroupingData rag : dataBundle.rewardList) {
+            if (rag == null || rag.reward == null || rag.reward.Id == null) continue;
+            Set<String> keys = getAllowedKeys(rag.reward, allowedByLog);
+            if (keys != null) allowedByReward.put(rag.reward.Id, keys);
+        }
+        if (allowedByReward.isEmpty()) return;
+
+        // 4) Owner reward(s) for each condition
+        Map<Id, Promotion_Account__c> accById = new Map<Id, Promotion_Account__c>();
+        for (Promotion_Account__c acc : rewardTree.accountList) {
+            if (acc != null && acc.Id != null) accById.put(acc.Id, acc);
+        }
+
+        Map<Id, Set<Id>> ownersByCondition = new Map<Id, Set<Id>>();
+        for (Promotion_Condition__c cond : rewardTree.conditionList) {
+            if (cond == null || cond.Promotion_Account__c == null) continue;
+            Promotion_Account__c acc = accById.get(cond.Promotion_Account__c);
+            if (acc == null) continue;
+
+            String condKey = normalizeKey(acc.Last_4__c) + '|' + normalizeKey(cond.Condition_Code__c);
+
+            Set<Id> candidates = new Set<Id>();
+            for (Id rewardId : allowedByReward.keySet()) {
+                if (allowedByReward.get(rewardId).contains(condKey)) candidates.add(rewardId);
+            }
+
+            Set<Id> owners = new Set<Id>();
+            if (acc.Promotion_Rewards__c != null
+                    && (candidates.isEmpty() || candidates.contains(acc.Promotion_Rewards__c))) {
+                // Direct link is correct (or no staging match): keep it
+                owners.add(acc.Promotion_Rewards__c);
+            } else {
+                // Direct link is wrong: use the reward(s) from RADS staging
+                owners.addAll(candidates);
+            }
+            ownersByCondition.put(cond.Id, owners);
+        }
+
+        // 5) Rebuild accounts and conditions for each reward
+        for (RewardAccountGroupingData rag : dataBundle.rewardList) {
+            if (rag == null || rag.reward == null || rag.reward.Id == null) continue;
+            Id rewardId = rag.reward.Id;
+
+            List<Promotion_Account__c> accounts = new List<Promotion_Account__c>();
+            Set<Id> seenAccounts = new Set<Id>();
+
+            // Accounts directly linked to this reward
+            List<Promotion_Account__c> direct = accountMap.get(rewardId);
+            if (direct != null) {
+                for (Promotion_Account__c acc : direct) {
+                    accounts.add(acc);
+                    seenAccounts.add(acc.Id);
+                }
+            }
+
+            // Accounts that hold a condition owned by this reward
+            for (Promotion_Account__c acc : rewardTree.accountList) {
+                if (acc == null || seenAccounts.contains(acc.Id)) continue;
+                List<Promotion_Condition__c> conds = conditionMap.get(acc.Id);
+                if (conds == null) continue;
+                for (Promotion_Condition__c cond : conds) {
+                    Set<Id> owners = ownersByCondition.get(cond.Id);
+                    if (owners != null && owners.contains(rewardId)) {
+                        accounts.add(acc);
+                        seenAccounts.add(acc.Id);
+                        break;
+                    }
+                }
+            }
+
+            AccountGroupingData acctGroup = new AccountGroupingData();
+            acctGroup.accountList = accounts;
+
+            for (Promotion_Account__c acc : accounts) {
+                List<Promotion_Condition__c> conds = conditionMap.get(acc.Id);
+                if (conds == null) continue;
+                for (Promotion_Condition__c cond : conds) {
+                    Set<Id> owners = ownersByCondition.get(cond.Id);
+                    if (owners == null || !owners.contains(rewardId)) continue;
+                    acctGroup.conditionList.add(buildConditionGroup(cond, ruleSetMap, rulesMap, progressMap));
+                }
+            }
+
+            rag.accountList = new List<AccountGroupingData>{ acctGroup };
+        }
+    }
+
+    private static Map<Id, Map<String, Set<String>>> loadStagingConditionKeys(Set<Id> logIds) {
+        Map<Id, Map<String, Set<String>>> result = new Map<Id, Map<String, Set<String>>>();
+        try {
+            Map<Id, String> offerByApiEnrollment = new Map<Id, String>();
+            for (API_Promotion_Enrollment__c enr : [
+                SELECT Id, Offer_Code__c
+                FROM API_Promotion_Enrollment__c
+                WHERE API_RADS_Transaction_Log__c IN :logIds
+            ]) {
+                offerByApiEnrollment.put(enr.Id, normalizeKey(enr.Offer_Code__c));
+            }
+
+            Map<Id, API_Promotion_Rewards__c> apiRewardById = new Map<Id, API_Promotion_Rewards__c>([
+                SELECT Id, Reward_Code__c, API_Promotion_Enrollment__c, API_RADS_Transaction_Log__c
+                FROM API_Promotion_Rewards__c
+                WHERE API_RADS_Transaction_Log__c IN :logIds
+            ]);
+
+            Map<Id, API_Account__c> apiAccountById = new Map<Id, API_Account__c>([
+                SELECT Id, API_Promotion_Rewards__c, Last_4__c
+                FROM API_Account__c
+                WHERE API_RADS_Transaction_Log__c IN :logIds
+            ]);
+
+            for (API_Promotion_Conditions__c apiCond : [
+                SELECT Id, API_Account__c, Condition_Code__c, API_RADS_Transaction_Log__c
+                FROM API_Promotion_Conditions__c
+                WHERE API_RADS_Transaction_Log__c IN :logIds
+            ]) {
+                if (apiCond.API_Account__c == null || apiCond.API_RADS_Transaction_Log__c == null) continue;
+                API_Account__c apiAcc = apiAccountById.get(apiCond.API_Account__c);
+                if (apiAcc == null || apiAcc.API_Promotion_Rewards__c == null) continue;
+                API_Promotion_Rewards__c apiRw = apiRewardById.get(apiAcc.API_Promotion_Rewards__c);
+                if (apiRw == null) continue;
+
+                String rewardCode = normalizeKey(apiRw.Reward_Code__c);
+                if (String.isBlank(rewardCode)) continue;
+
+                String offerCode = apiRw.API_Promotion_Enrollment__c != null
+                    && offerByApiEnrollment.containsKey(apiRw.API_Promotion_Enrollment__c)
+                    ? offerByApiEnrollment.get(apiRw.API_Promotion_Enrollment__c)
+                    : '';
+
+                String condKey = normalizeKey(apiAcc.Last_4__c) + '|' + normalizeKey(apiCond.Condition_Code__c);
+
+                Map<String, Set<String>> byReward = result.get(apiCond.API_RADS_Transaction_Log__c);
+                if (byReward == null) {
+                    byReward = new Map<String, Set<String>>();
+                    result.put(apiCond.API_RADS_Transaction_Log__c, byReward);
+                }
+                addKey(byReward, 'O:' + offerCode + '|' + rewardCode, condKey);
+                addKey(byReward, 'R:' + rewardCode, condKey);
+            }
+        } catch (Exception e) {
+            system.debug('loadStagingConditionKeys failed: ' + e.getMessage());
+            return new Map<Id, Map<String, Set<String>>>();
+        }
+        return result;
+    }
+
+    private static Set<String> getAllowedKeys(Promotion_Rewards__c reward, Map<Id, Map<String, Set<String>>> allowedByLog) {
+        if (reward == null || reward.API_RADS_Transaction_Log__c == null) return null;
+        String rewardCode = normalizeKey(reward.Reward_Code__c);
+        if (String.isBlank(rewardCode)) return null;
+
+        Map<String, Set<String>> byReward = allowedByLog.get(reward.API_RADS_Transaction_Log__c);
+        if (byReward == null) return null;
+
+        String offerCode = reward.Promotion_Enrollment_Number__r != null
+            ? normalizeKey(reward.Promotion_Enrollment_Number__r.Offer_Code__c)
+            : '';
+
+        Set<String> keys = byReward.get('O:' + offerCode + '|' + rewardCode);
+        if (keys == null) keys = byReward.get('R:' + rewardCode);
+        return keys;
+    }
+
+    private static void addKey(Map<String, Set<String>> target, String rewardKey, String condKey) {
+        if (!target.containsKey(rewardKey)) target.put(rewardKey, new Set<String>());
+        target.get(rewardKey).add(condKey);
+    }
+
+    private static String normalizeKey(String value) {
+        return value == null ? '' : value.trim().toUpperCase();
+    }
+
+    private static ConditionGroupingData buildConditionGroup(
+        Promotion_Condition__c cond,
+        Map<Id, List<Promotion_Rule_Set__c>> ruleSetMap,
+        Map<Id, List<Promotion_Rule__c>> rulesMap,
+        Map<Id, List<Promotion_Rule_Progress__c>> progressMap
+    ) {
+        ConditionGroupingData cg = new ConditionGroupingData();
+        cg.condition = cond;
+
+        List<Promotion_Rule_Set__c> rsList = ruleSetMap.get(cond.Id);
+        if (rsList == null) return cg;
+
+        for (Promotion_Rule_Set__c rs : rsList) {
+            RuleSet rsWrap = new RuleSet();
+            rsWrap.ruleSet = rs;
+            cg.ruleSetList.add(rsWrap);
+
+            List<Promotion_Rule__c> ruleList = rulesMap.get(rs.Id);
+            if (ruleList == null) continue;
+
+            for (Promotion_Rule__c rl : ruleList) {
+                Rule ruleWrap = new Rule();
+                ruleWrap.rule = rl;
+                rsWrap.rulesList.add(ruleWrap);
+
+                List<Promotion_Rule_Progress__c> plist = progressMap.get(rl.Id);
+                if (plist == null) continue;
+
+                for (Promotion_Rule_Progress__c pg : plist) {
+                    RuleProgress prog = new RuleProgress();
+                    prog.progress = pg;
+                    ruleWrap.progressList.add(prog);
+                }
+            }
+        }
+        return cg;
     }
 
     public class RewardRecordSet {

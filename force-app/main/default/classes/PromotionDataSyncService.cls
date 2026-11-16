@@ -151,7 +151,7 @@ public class PromotionDataSyncService {
          List<Promotion_Condition__c>  allConditions = new List<Promotion_Condition__c>();
          allConditions.addAll(conditionsToUpdate.values());
          allConditions.addAll(conditionsToInsert);
-         if(allConditions.isEmpty()) upsert allConditions;
+         if(!allConditions.isEmpty()) upsert allConditions;
 
 // allRuleSets - Promotion_Rule_Set__c
         Map<Id,Promotion_Rule_Set__c> ruleSetsToUpdate = new Map<Id,Promotion_Rule_Set__c>();
@@ -429,6 +429,17 @@ public class PromotionDataSyncService {
             System.debug('Dataset is null for case: ' + caseNumber);
             return;
         }
+
+        // Tier / Multi-Product fix: match each API record to the existing record under its own parent
+        dataSet.apiPermRecordsMap = PromoXHierarchyMatcher.match(
+            safeGet(bd.apiEnrollByLogId,    logId), safeGet(bd.permEnrollByCaseId,   relatedRecord.Id),
+            safeGet(bd.apiRewardByLogId,    logId), safeGet(bd.permRewardByCaseId,   relatedRecord.Id),
+            safeGet(bd.apiAccountByLogId,   logId), safeGet(bd.permAccountByCaseId,  relatedRecord.Id),
+            safeGet(bd.apiConditionByLogId, logId), safeGet(bd.permCondByCaseId,     relatedRecord.Id),
+            safeGet(bd.apiRuleSetByLogId,   logId), safeGet(bd.permRuleSetByCaseId,  relatedRecord.Id),
+            safeGet(bd.apiRuleByLogId,      logId), safeGet(bd.permRuleByCaseId,     relatedRecord.Id),
+            safeGet(bd.apiRuleProgByLogId,  logId), safeGet(bd.permRuleProgByCaseId, relatedRecord.Id)
+        );
 
         for (Promotion_Enrollment__c rec : dataSet.enrollmentRecords) {
             enrollmentUpdates.put(rec.Offer_Code__c, rec);

@@ -79,6 +79,16 @@ public class PromotionDataCapture {
             dataSet = PromoXTreeCreator.createDataSet(caseNumber,transactionLogId);
             system.debug('running promo data   case num   : ' + caseNumber + '       tl id' + transactionLogId);
             if (dataSet != null) {
+                // Tier / Multi-Product fix: match each API record to the existing record under its own parent
+                dataSet.apiPermRecordsMap = PromoXHierarchyMatcher.match(
+                    dataSet.apiEnrollemtRecords,   dataSet.enrollmentRecords,
+                    dataSet.apiRewardRecords,      dataSet.rewardRecords,
+                    apiAccountRecords,             dataSet.accountRecords,
+                    dataSet.apiConditionRecords,   dataSet.conditionRecords,
+                    dataSet.apiRuleSetRecords,     dataSet.RuleSetRecords,
+                    dataSet.apiRrulesRecords,      dataSet.rulesRecords,
+                    dataSet.apiRuleProgressRecords, dataSet.ruleProgressRecords
+                );
             enrollment();
             rewards();
             accounts();
@@ -157,7 +167,9 @@ public class PromotionDataCapture {
             	accountCrossRecords.put(iRecord.Id,createAccount(iRecord,null));
             }
         }
-        if(permRecords == null || permRecords.isEmpty()){
+        // Tier / Multi-Product fix: always save accounts, so a new tier account gets an Id
+        // before its conditions are linked to it. One-to-one matching prevents duplicate Ids.
+        if(!accountCrossRecords.isEmpty()){
            upsert accountCrossRecords.values();
         }
         
